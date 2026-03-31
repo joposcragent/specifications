@@ -17,6 +17,9 @@ paths:
                 $ref: '#/components/schemas/LivenessProbe'
         '503':
           description: Not available
+          content:
+            text/plain:
+               example: "division by zero"
   /text/vectorize:
     post:
       description: Вычислить векторное представление текста
@@ -35,6 +38,11 @@ paths:
                 $ref: '#/components/schemas/Vector'
         '413':
           description: Длина текста превышает доступный контекст модели
+        '500':
+          description: Неизвестная ошибка
+          content:
+            text/plain:
+               example: "division by zero"
   /vectors/cosine-similarity:
     post:
       description: Вычислить косинусное сходство двух векторов
@@ -51,6 +59,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CosineSimilarity'
+        '500':
+          description: Неизвестная ошибка
+          content:
+            text/plain:
+               example: "division by zero"
   
 components:
   schemas:
