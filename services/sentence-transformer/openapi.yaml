@@ -1,0 +1,85 @@
+openapi: 3.0.4
+info:
+  title: Job posting scraping agent - sentence transformer
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/sentence-transformer
+paths:
+  /health:
+    get:
+      description: Health check
+      responses:
+        '200':
+          description: Ready
+          content:
+            appliction/json:
+              schema:
+                $ref: '#/components/schemas/LivenessProbe'
+        '503':
+          description: Not available
+  /text/vectorize:
+    post:
+      description: Вычислить векторное представление текста
+      requestBody:
+        description: Текст, который надо векторизовать
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextCorpus'
+      responses:
+        '200':
+          description: Вектор вычислен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vector'
+        '413':
+          description: Длина текста превышает доступный контекст модели
+  /vectors/cosine-similarity:
+    post:
+      description: Вычислить косинусное сходство двух векторов
+      requestBody:
+        description: Два вектора
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VectorsPair'
+      responses:
+        '200':
+          description: Результат вычисления в процентах
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosineSimilarity'
+  
+components:
+  schemas:
+    LivenessProbe:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - READY
+    Vector:
+      type: array
+      items:
+        type: number
+    TextCorpus:
+      type: object
+      properties:
+        text:
+          type: string
+    VectorsPair:
+      type: object
+      properties:
+        left:
+          $ref: '#/components/schemas/Vector'
+        right:
+          $ref: '#/components/schemas/Vector'
+    CosineSimilarity:
+      type: object
+      properties:
+        similarity:
+          type: number
+          example: 0.7689
