@@ -12,7 +12,7 @@ paths:
         '200':
           description: Ready
           content:
-            appliction/json:
+            application/json:
               schema:
                 $ref: '#/components/schemas/LivenessProbe'
         '503':
