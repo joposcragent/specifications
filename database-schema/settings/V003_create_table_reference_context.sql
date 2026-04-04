@@ -9,6 +9,8 @@ create table settings.reference_context
     updated_at timestamp with time zone
 );
 
+comment on table settings.reference_context is 'Таблица всегда хранит одну или ноль строк, то есть по сути это kv-storage';
+
 alter table settings.reference_context
     owner to postgres;
 
