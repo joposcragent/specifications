@@ -14,11 +14,34 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  ensure-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-joposcragent}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        export PGPASSWORD="$$POSTGRES_PASSWORD"
+        export PGHOST=postgres
+        export PGPORT=5432
+        until psql -U "$$POSTGRES_USER" -d postgres -c '\q' 2>/dev/null; do sleep 1; done
+        EXISTS=$$(psql -U "$$POSTGRES_USER" -d postgres -Atqc "SELECT 1 FROM pg_database WHERE datname = '$$POSTGRES_DB'")
+        if [ -z "$$EXISTS" ]; then
+          psql -U "$$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$$POSTGRES_DB\""
+        fi
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   flyway:
     build:
@@ -29,8 +52,8 @@ services:
       FLYWAY_USER: ${POSTGRES_USER:-postgres}
       FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     depends_on:
-      postgres:
-        condition: service_healthy
+      ensure-db:
+        condition: service_completed_successfully
     restart: "no"
 
 volumes:
