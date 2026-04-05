@@ -249,6 +249,15 @@ components:
           type: array
           items:
             type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - context
+        - vector
     SearchQueriesList:
       type: array
       items:
