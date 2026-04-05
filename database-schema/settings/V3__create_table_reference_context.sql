@@ -1,6 +1,6 @@
 create table settings.reference_context
 (
-    uuid       uuid                     default uuid_generate_v4() not null
+    uuid       uuid                     default gen_random_uuid() not null
         constraint reference_context_pk
             primary key,
     text       varchar                                             not null,

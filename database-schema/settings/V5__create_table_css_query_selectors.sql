@@ -1,6 +1,6 @@
 create table settings.css_query_selectors
 (
-    uuid       uuid                     default uuid_generate_v4() not null
+    uuid       uuid                     default gen_random_uuid() not null
         constraint css_query_selectors_pk
             primary key,
     selector   varchar                                             not null,

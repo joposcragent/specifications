@@ -1,6 +1,6 @@
 create table settings.search_queries
 (
-    uuid       uuid                     default uuid_generate_v4() not null
+    uuid       uuid                     default gen_random_uuid() not null
         constraint search_queries_pk
             primary key,
     query      varchar                                             not null,

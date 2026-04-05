@@ -1,6 +1,6 @@
 create table job_postings.postings
 (
-    uuid              uuid                           default uuid_generate_v4()                    not null
+    uuid              uuid                           default gen_random_uuid()                    not null
         constraint postings_pk
             primary key,
     uid               varchar                                                                      not null,
