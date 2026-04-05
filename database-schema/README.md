@@ -67,6 +67,113 @@ docker run --rm \
 
 Подставьте хост, порт и учётные данные под вашу среду. На Linux вместо `host.docker.internal` может понадобиться IP хоста или `--network host`.
 
+## Образ Flyway в другом docker-compose
+
+Образ содержит только миграции и скрипт `migrate.sh`; ему нужны переменные `FLYWAY_URL`, `FLYWAY_USER`, `FLYWAY_PASSWORD` (как в официальной документации [Flyway][flyway-docs]). База данных должна уже существовать (или создавайте её отдельным шагом, по аналогии с сервисом `ensure-db` в [файле Compose][compose-file]).
+
+### На вашей локальной машине
+
+1. **Соберите образ** из каталога `database-schema` и задайте удобный тег (один раз или после каждого изменения SQL):
+
+   ```bash
+   docker build -t local-flyway-migrate /путь/к/database-schema
+   ```
+
+2. **Подключите образ в другом проекте** одним из способов:
+
+   - Указать готовый тег:
+
+     ```yaml
+     services:
+       migrate:
+         image: local-flyway-migrate
+         environment:
+           FLYWAY_URL: jdbc:postgresql://db:5432/имя_базы
+           FLYWAY_USER: postgres
+           FLYWAY_PASSWORD: postgres
+         depends_on:
+           db:
+             condition: service_healthy
+         restart: "no"
+     ```
+
+   - Либо собрать из исходников без отдельного `docker build` (путь к каталогу с `Dockerfile` и миграциями должен быть доступен с вашей машины):
+
+     ```yaml
+     services:
+       migrate:
+         build:
+           context: /путь/к/database-schema
+           dockerfile: Dockerfile
+         environment:
+           FLYWAY_URL: jdbc:postgresql://db:5432/имя_базы
+           FLYWAY_USER: postgres
+           FLYWAY_PASSWORD: postgres
+         depends_on:
+           db:
+             condition: service_healthy
+         restart: "no"
+     ```
+
+3. **Имя хоста в `FLYWAY_URL`** должно совпадать с именем сервиса PostgreSQL в **том же** файле Compose (пример выше: `db`). Тогда контейнеры в одной сети видят друг друга по DNS Docker.
+
+4. Если PostgreSQL крутится **на хосте**, а Flyway — в контейнере другого compose, используйте `host.docker.internal` (Windows, macOS, Docker Desktop) или IP хоста в `FLYWAY_URL`, например `jdbc:postgresql://host.docker.internal:5432/имя_базы`.
+
+### Публикация образа в Docker Hub
+
+Имя образа на [Docker Hub][docker-hub] имеет вид `имя_пользователя/имя_репозитория:тег` (например `myuser/joposcragent-flyway:1.0.0`). Репозиторий можно [создать в веб-интерфейсе][docker-hub-repos] заранее или он появится при первом `docker push`, если политика аккаунта это допускает.
+
+1. Войдите в Docker с учётной записью Hub (интерактивно запросит пароль или [Personal Access Token][docker-hub-token]):
+
+   ```bash
+   docker login
+   ```
+
+   Для неинтерактивного сценария (CI) используйте `echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USER" --password-stdin`.
+
+2. Перейдите в каталог `database-schema` и соберите образ с **тегом под Docker Hub**:
+
+   ```bash
+   cd database-schema
+   docker build -t myuser/joposcragent-flyway:1.0.0 .
+   ```
+
+   Подставьте своё имя пользователя Hub, имя репозитория и тег (часто используют семантическую версию или `latest`).
+
+3. Отправьте образ в реестр:
+
+   ```bash
+   docker push myuser/joposcragent-flyway:1.0.0
+   ```
+
+После успешной загрузки образ доступен по адресу вида `docker.io/myuser/joposcragent-flyway:1.0.0` (префикс `docker.io/` в compose обычно можно не указывать).
+
+### На удалённой машине (образ с Docker Hub)
+
+1. На сервере выполните `docker pull myuser/joposcragent-flyway:1.0.0` или задайте тот же образ в `docker-compose.yaml`, чтобы при `docker compose pull` загрузка шла автоматически.
+
+2. В сервисе миграций укажите опубликованный образ и переменные `FLYWAY_*`:
+
+   ```yaml
+   services:
+     migrate:
+       image: myuser/joposcragent-flyway:1.0.0
+       environment:
+         FLYWAY_URL: jdbc:postgresql://db:5432/имя_базы
+         FLYWAY_USER: postgres
+         FLYWAY_PASSWORD: postgres
+       depends_on:
+         db:
+           condition: service_healthy
+       restart: "no"
+   ```
+
+3. В `FLYWAY_URL` укажите хост PostgreSQL, **видимый с удалённой машины**: имя сервиса БД в том же compose, IP/hostname сервера в сети, адрес облачной БД. `localhost` внутри контейнера — это сам контейнер, а не хост сервера; для БД на том же хосте без общей сети compose нужны `network_mode: host`, отдельный IP хоста или пользовательская сеть Docker.
+
+4. Пароли и URL задавайте через переменные окружения или механизм секретов на сервере, не коммитьте их в репозиторий.
+
+**Итог:** локально удобно собирать из `build.context` или локального тега; на удалённой машине — тянуть образ с Docker Hub по имени `пользователь/репозиторий:тег` и настраивать `FLYWAY_URL` относительно сети **того** хоста, где запускается контейнер Flyway.
+
 ## Добавление миграций
 
 1. Выберите схему — подкаталог с её именем (например `settings`, `job_postings`).
@@ -99,4 +206,8 @@ docker run --rm \
 Альтернатива одной командой после правок в SQL: `docker compose up --build flyway` — пересоберёт образ `flyway` и выполнит миграции; при необходимости поднимет `postgres`, если он ещё не работает.
 
 [compose-file]: docker-compose.yaml
+[docker-hub]: https://hub.docker.com/
+[docker-hub-repos]: https://docs.docker.com/docker-hub/repos/create/
+[docker-hub-token]: https://docs.docker.com/docker-hub/access-tokens/
+[flyway-docs]: https://documentation.red-gate.com/flyway/
 [flyway-image]: https://hub.docker.com/r/flyway/flyway
