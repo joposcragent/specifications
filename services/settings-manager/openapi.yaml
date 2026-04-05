@@ -11,6 +11,8 @@ tags:
     description: Контроллер управления поисковыми запросами
   - name: query-selector
     description: Контроллер настройки CSS-селекторов
+  - name: relevance-thresholds
+    description: Контроллер настройки порогов релевантности
 paths:
   /reference-context:
     get:
@@ -166,6 +168,70 @@ paths:
         '200':
           description: CSS-селектор удален
 
+  /relevance-thresholds/list:
+    get:
+      description: Получить все пороги релевантности
+      tags: 
+        - relevance-thresholds
+      responses: 
+        '200':
+          description: Список порого релевантности
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/RelevenceThresholdsList'
+        '500':
+          description: Неизвестная ошибка
+          content: 
+            text/plain:
+              schema:
+                type: string
+  /relevance-thresholds/{type}:
+    get:
+      description: Получить порог релевантности конкретного типа
+      tags: 
+        - relevance-thresholds
+      parameters: 
+        - $ref: '#/components/parameters/RelevaneThresholdType'
+      responses: 
+        '200':
+          description: Порог релавнтности
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/RelevenceThresholdValue'
+        '500':
+          description: Неизвестная ошибка
+          content: 
+            text/plain:
+              schema:
+                type: string
+    post:  
+      description: Установить порог релевантности конкретного типа
+      tags: 
+        - relevance-thresholds
+      parameters: 
+        - $ref: '#/components/parameters/RelevaneThresholdType'
+      requestBody: 
+        content: 
+          application/json:
+            schema: 
+              type: object
+              properties: 
+                value:
+                  type: number
+                  example: 0.81946951150894038
+              required: 
+                - value
+      responses: 
+        '200':
+          description: Порог релавнтности установлен
+        '500':
+          description: Неизвестная ошибка
+          content: 
+            text/plain:
+              schema:
+                type: string
 components:
   schemas:
     ReferenceContext:
@@ -214,7 +280,46 @@ components:
         - JOB_POSTING_LIST_CARD_CONTENT_LINK
         - JOB_POSTING_LIST_PAGES_LINKS
         - JOB_POSTING_CARD_CONTENT
+    RelevenceThresholdsList:
+      type: object
+      properties: 
+        list:
+          $ref: '#/components/schemas/RelevenceThresholdsListItem'
+      required: 
+        - list
+    RelevenceThresholdsListItem:
+      type: object
+      properties: 
+        type:
+          $ref: '#/components/schemas/RelevenceThresholdType'
+        value:
+          type: number
+          example: 0.81946951150894038
+    RelevenceThresholdType:
+      type: string
+      enum: 
+        - TITLE
+        - GENERAL
+        - NOTIFICATION
+    RelevenceThresholdValue:
+      type: object
+      properties: 
+        value:
+          type: number
+          example: 0.81946951150894038
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
   parameters:
+    RelevaneThresholdType:
+      name: type
+      in: path
+      schema: 
+        $ref: '#/components/schemas/RelevenceThresholdType'
+      required: true
     SelectorType:
       name: selectorType
       in: path
