@@ -4,6 +4,7 @@ info:
   version: 1.0.0
 servers:
   - url: http://settings-manager:8080/
+  - url: http://localhost:8080/
 tags:
   - name: reference-context
     description: Контроллер управления эталонным контекстом

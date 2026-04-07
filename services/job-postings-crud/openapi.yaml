@@ -1,0 +1,340 @@
+openapi: 3.1.0
+info:
+  title: Управление профилем пользователя
+  version: 1.0.0
+servers:
+  - url: http://job-postings-crud:8080/
+  - url: http://localhost:8080/
+
+paths:
+  /job-postings/{jobPostingUuid}:
+    get:
+      description: Получение вакансии по uuid
+      parameters: 
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses: 
+        '200':
+          description: Вакансия
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/JobPostingsItem'
+        '404':
+          description: Вакансия с таким UUID не найдена
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+    post:
+      description: Сохранение новой вакансии
+      parameters: 
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+      requestBody: 
+        description: Данные вакансии
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/JobPostingsItem'
+      responses: 
+        '200':
+          description: Вакансия создана
+        '409':
+          description: Такая вакансия уже есть (по UUID или по UID - в теле ответа подробности)
+          content: 
+            text/plain: 
+              schema: 
+                type: string
+              example: Вакансия с uid 131927888 уже есть в БД
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+    put:
+      description: Обновление данных вакансии
+      parameters: 
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+      requestBody: 
+        description: Данные вакансии
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/JobPostingsItem'
+      responses: 
+        '200':
+          description: Вакансия обновлена
+        '404':
+          description: Вакансии с таким UUID  в базе не найдено
+        '500':
+          $ref: '#/components/responses/UncaughtException'      
+  /job-postings/{jobPostingUuid}/evaluation-status/{status}:
+    post:
+      description: Изменение статуса оценки вакансии
+      parameters: 
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+        - name: status
+          in: path
+          schema: 
+            $ref: '#/components/schemas/EvaluationStatus'
+          required: true
+      responses: 
+        '200':
+          description: Статус изменен
+        '404':
+          description: Вакансия не найдена
+        '500':
+          $ref: '#/components/responses/UncaughtException'      
+  /job-postings/{jobPostingUuid}/response-status/{status}:
+    post:
+      description: Изменение статуса рассмотрения вакансии
+      parameters: 
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+        - name: status
+          in: path
+          schema: 
+            $ref: '#/components/schemas/ResponseStatus'
+          required: true
+      responses: 
+        '200':
+          description: Статус изменен
+        '404':
+          description: Вакансия не найдена
+        '500':
+          $ref: '#/components/responses/UncaughtException'      
+  /job-postings/list:
+    get:
+      description: Получение списка вакансий по простому отбору
+      parameters: 
+        - name: uuid
+          description: Внутренний UUID вакансии
+          in: query
+          schema: 
+            type: string
+            format: uuid
+        - name: uid
+          description: Внешний uid вакансии
+          in: query
+          schema: 
+            type: string
+        - name: title
+          in: query
+          description: Подстрока названия вакансии
+          schema: 
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses: 
+        '200':
+          description: Список вакансий
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/JobPostingsList'
+        '404':
+          description: Не найдено ни одной вакансии
+        '500':
+          $ref: '#/components/responses/UncaughtException' 
+  /job-postings/search-query/by-uuids:
+    post:
+      description: Получение вакансий по списку UUID
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/UuidsList'
+      responses: 
+        '200':
+          description: Список найденных вакансий
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/JobPostingsList'
+        '404':
+            description: Не найдено ни одной вакансии
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /job-postings/search-query/non-existent:
+    post:
+      description: Получение списка uid новых вакансий (которых еще нет в БД)
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/JobPostingsUidsList'
+      responses: 
+        '200':
+          description: Список найденных вакансий
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/JobPostingsList'
+        '404':
+            description: Не найдено ни одной вакансии
+        '500':
+          $ref: '#/components/responses/UncaughtException'    
+components:
+  schemas:
+    EvaluationStatus:
+      description: Этап процесса оценки вакансии
+      type: string
+      enum:
+        - NEW
+        - TITLE_IRRELEVANT
+        - PENDING
+        - IRRELEVANT
+        - RELEVANT
+    ResponseStatus:
+      description: Статус рассмотрения вакансии
+      type: string
+      enum:
+        - NEW
+        - NOT_INTERESTED
+        - RESPONDED
+        - REJECTED
+    JobPostingsUidsList:
+      description: Список внешних uid вакансий
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            type: string
+          example: 
+            - 131927888
+            - 131927889
+            - 131927812
+      required: 
+        - list
+    UuidsList:
+      description: Список любых UUID v4
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            type: string
+            format: uuid
+      required: 
+        - list
+    JobPostingsList:
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            $ref: '#/components/schemas/JobPostingsItem'
+      required: 
+        - list
+    JobPostingsItem:
+      type: object
+      properties: 
+        uuid:
+          type: string
+          format: uuid
+        uid:
+          type: string
+          example: 131927888
+        publicationDate:
+          type: string
+          format: date-time
+        title:
+          type: string
+          example: Tech Lead / Senior С#-разработчик
+        url:
+          type: string
+          example: https://hh.ru/vacancy/131927888
+        titleVector:
+          type: array
+          items: 
+            type: number
+          example: [
+                    -0.03144988417625427,
+                    0.03998693823814392,
+                    -0.05009036511182785,
+                    0.00009027662599692121,
+                    -0.01712440885603428,
+                    -0.016279764473438263,
+                    0.03184894844889641,
+                    0.06008609011769295,
+                    -0.002879486419260502,
+                    -0.007612203247845173,
+                    -0.07903512567281723,
+                    0.05236726254224777
+                  ]
+        contentVector:
+          type: array
+          items: 
+            type: number
+          example: [
+                    -0.03144988417625427,
+                    0.03998693823814392,
+                    -0.05009036511182785,
+                    0.00009027662599692121,
+                    -0.01712440885603428,
+                    -0.016279764473438263,
+                    0.03184894844889641,
+                    0.06008609011769295,
+                    -0.002879486419260502,
+                    -0.007612203247845173,
+                    -0.07903512567281723,
+                    0.05236726254224777
+                  ]
+        evaluationStatus:
+          $ref: '#/components/schemas/EvaluationStatus'
+        responseStatus:
+          $ref: '#/components/schemas/ResponseStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: 
+        - uuid
+        - uid
+        - publicationDate
+        - title
+        - url
+  parameters:
+    RequiredEntityUuid:
+      name: jobPostingUuid
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    Size:
+      name: size
+      in: query
+      description: Количество записей для возврата
+      schema:
+        type: integer
+        default: 20
+      required: false
+    Page:
+      name: page
+      in: query
+      description: Номер страницы
+      schema:
+        type: integer
+        default: 1
+      required: false      
+  responses:
+    UncaughtException:
+      description: Неизвестная ошибка
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: |
+            2020-12-04 15:03:12.926 ERROR 80850 --- [         task-1] .a.i.SimpleAsyncUncaughtExceptionHandler : Unexpected exception occurred invoking async method: public void com.yawintutor.TestService.print(int)
+                java.lang.ArithmeticException: / by zero
+                  at com.yawintutor.TestService.print(TestService.java:15) ~[classes/:na]
+                  at com.yawintutor.TestService$$FastClassBySpringCGLIB$$284b10a4.invoke(<generated>) ~[classes/:na]
+                  at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218) ~[spring-core-5.3.1.jar:5.3.1]
+                  at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.invokeJoinpoint(CglibAopProxy.java:771) ~[spring-aop-5.3.1.jar:5.3.1]
+                  at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-5.3.1.jar:5.3.1]
+                  at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:749) ~[spring-aop-5.3.1.jar:5.3.1]
+                  at org.springframework.aop.interceptor.AsyncExecutionInterceptor.lambda$invoke$0(AsyncExecutionInterceptor.java:115) ~[spring-aop-5.3.1.jar:5.3.1]
+                  at java.util.concurrent.FutureTask.run(FutureTask.java:266) ~[na:1.8.0_101]
+                  at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142) ~[na:1.8.0_101]
+                  at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617) ~[na:1.8.0_101]
+                  at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_101]
+  
