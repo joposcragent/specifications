@@ -1,0 +1,184 @@
+openapi: 3.1.0
+info:
+  title: Сервис автоматического оценивания вакансий
+  version: 1.0.0
+servers:
+  - url: http://job-postings-evaluator:8080/
+  - url: http://localhost:8082/
+tags:
+  - name: evaluate
+    description: Контроллер автоматического оценивания вакансий
+paths:
+  /evaluate/sync:
+    post:
+      description: Выполнение оценки переданного массива вакансий
+      tags: 
+        - evaluate
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/JobPostingsUidsList'
+      responses: 
+        '200':
+          description: Массив uuid вакансий с оценкой
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/JobPostingsUidsEvaluatedList'
+        '404':
+          description: Не найдено ни одной вакансии с такими UUID
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /evaluate/async:
+    post:
+      description: Запустить асинхронный процесс оценки
+      tags: 
+        - evaluate
+      responses: 
+        '200':
+          description: Задание запущено
+          content:
+            application/json: 
+              schema:
+                $ref: '#/components/schemas/AsyncJobStatus'
+        '501':
+          description: Not implemented
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /evaluate/async/{jobUuid}:
+    get:
+      description: Получение состояния выполнения асинхронного задания
+      parameters: 
+        - name: jobUuid
+          in: path
+          schema: 
+            type: string
+            format: uuid
+          required: true
+      responses: 
+        '200':
+          description: Текущий статуст джоба
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/AsyncJobStatus'
+        '501':
+          description: Not implemented
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+components:
+  schemas:
+    AsyncJobStatus:
+      type: object
+      properties: 
+        jobUuid:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - RUNNING
+            - COMPLETED
+            - FAILED
+      required: 
+        - jobUuid
+    JobPostingsUidsEvaluatedList:
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            $ref: '#/components/schemas/JobPostingsUidsEvaluatedItem'
+      required: 
+        - list
+    JobPostingsUidsEvaluatedItem:
+      type: object
+      properties: 
+        uuid:
+          type: string
+          format: uuid
+        evaluationStatus:
+          $ref: '#/components/schemas/EvaluationStatus'
+      required: 
+        - uuid
+        - evaluationStatus
+    EvaluationStatus:
+      description: Этап процесса оценки вакансии
+      type: string
+      enum:
+        - NEW
+        - TITLE_IRRELEVANT
+        - PENDING
+        - IRRELEVANTRELEVANT
+        - evaluationStatus
+    ResponseStatus:
+      description: Этап рассмотрения вакансии
+      type: string
+      enum:
+        - NEW
+        - NOT_INTERESTED
+        - RESPONDED
+        - REJECTED
+    JobPostingsUidsList:
+      description: Список внешнийх uid вакансий
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            type: string
+          example: 
+            - 131927888
+            - 131927889
+            - 131927812
+      required: 
+        - list
+    UuidsList:
+      description: Список любых UUID v4
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            type: string
+            format: uuid
+      required: 
+        - list
+  parameters:
+    RequiredEntityUuid:
+      name: jobPostingUuid
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    Size:
+      name: size
+      in: query
+      description: "Количество записей для возврата"
+      schema:
+        type: integer
+        default: 20
+      required: false
+    Page:
+      name: page
+      in: query
+      description: "Номер страницы"
+      schema:
+        type: integer
+        default: 1
+      required: false
+  responses:
+    UncaughtException:
+      description: Неизвестная ошибка
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: |
+            2020-12-04 15:03:12.926 ERROR 80850 --- [         task-1] .a.i.SimpleAsyncUncaughtExceptionHandler : Unexpected exception occurred invoking async method: public void com.yawintutor.TestService.print(int)
+                java.lang.ArithmeticException: / by zero
+                  at com.yawintutor.TestService.print(TestService.java:15) ~[classes/:na]
+                  at com.yawintutor.TestService$$FastClassBySpringCGLIB$$284b10a4.invoke(<generated>) ~[classes/:na]
+                  at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218) ~[spring-core-5.3.1.jar:5.3.1]
