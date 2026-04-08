@@ -166,6 +166,11 @@ paths:
           description: Подстрока названия вакансии (SQL `LIKE %title%`)
           schema:
             type: string
+        - name: company
+          in: query
+          description: Подстрока названия компании
+          schema:
+            type: string
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -244,7 +249,6 @@ components:
       type: string
       enum:
         - NEW
-        - TITLE_IRRELEVANT
         - PENDING
         - IRRELEVANT
         - RELEVANT
@@ -301,32 +305,17 @@ components:
         uid:
           type: string
           example: "131927888"
-        publicationDate:
-          type: string
-          format: date-time
         title:
           type: string
-          example: Tech Lead / Senior С#-разработчик
+          example: Технический директор
         url:
           type: string
-          example: https://hh.ru/vacancy/131927888
-        titleVector:
-          type: array
-          items:
-            type: number
-          example:
-            - -0.03144988417625427
-            - 0.03998693823814392
-            - -0.05009036511182785
-            - 0.00009027662599692121
-            - -0.01712440885603428
-            - -0.016279764473438263
-            - 0.03184894844889641
-            - 0.06008609011769295
-            - -0.002879486419260502
-            - -0.007612203247845173
-            - -0.07903512567281723
-            - 0.05236726254224777
+          example: https://hh.ru/vacancy/131962084
+        company:
+          type: string
+          example: ООО Криотрейд инжиниринг
+        content:
+          type: string
         contentVector:
           type: array
           items:
@@ -348,6 +337,9 @@ components:
           $ref: '#/components/schemas/EvaluationStatus'
         responseStatus:
           $ref: '#/components/schemas/ResponseStatus'
+        publicationDate:
+          type: string
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -359,9 +351,10 @@ components:
       required:
         - uuid
         - uid
-        - publicationDate
         - title
         - url
+        - company
+
     JobPostingsItemWrite:
       description: |
         Тело запроса при создании/обновлении. Поля `createdAt` и `updatedAt` в запросе игнорируются.
@@ -369,45 +362,49 @@ components:
         `responseStatus` и векторы могут быть null.
       type: object
       properties:
-        uuid:
-          type: string
-          format: uuid
         uid:
           type: string
           example: "131927888"
-        publicationDate:
-          type: string
-          format: date-time
         title:
           type: string
+          example: Технический директор
         url:
           type: string
-        titleVector:
-          type: array
-          items:
-            type: number
+          example: https://hh.ru/vacancy/131962084
+        company:
+          type: string
+          example: ООО Криотрейд инжиниринг
+        content:
+          type: string
         contentVector:
           type: array
           items:
             type: number
+          example:
+            - -0.03144988417625427
+            - 0.03998693823814392
+            - -0.05009036511182785
+            - 0.00009027662599692121
+            - -0.01712440885603428
+            - -0.016279764473438263
+            - 0.03184894844889641
+            - 0.06008609011769295
+            - -0.002879486419260502
+            - -0.007612203247845173
+            - -0.07903512567281723
+            - 0.05236726254224777
         evaluationStatus:
           $ref: '#/components/schemas/EvaluationStatus'
         responseStatus:
           $ref: '#/components/schemas/ResponseStatus'
-        createdAt:
+        publicationDate:
           type: string
           format: date-time
-          readOnly: true
-        updatedAt:
-          type: string
-          format: date-time
-          readOnly: true
       required:
-        - uuid
         - uid
-        - publicationDate
         - title
         - url
+        - company
 
   parameters:
     RequiredEntityUuid:

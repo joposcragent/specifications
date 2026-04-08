@@ -41,11 +41,12 @@
    2. `uid` = `{jobPosting.uid}`
    3. `publication_date` = `{jobPosting.publicationDate}`
    4. `title` = `{jobPosting.title}`
-   5. `url` = `{jobPosting.url}`
-   6. `title_vector` = `{jobPosting.titleVector}`
-   7. `content_vector` = `{jobPosting.contentVector}`
-   8. `evaluation_status` = `{jobPosting.evaluationStatus}`
-   9. `response_status` = `{jobPosting.responseStatus}`
+   5. `company` = `{jobPosting.company}`
+   6. `url` = `{jobPosting.url}`
+   7. `content` = `{jobPosting.content}`
+   8. `content_vector` = `{jobPosting.contentVector}`
+   9. `evaluation_status` = `{jobPosting.evaluationStatus}`
+   10. `response_status` = `{jobPosting.responseStatus}`
 4. При успешной записи в БД возвращает `HTTP 200`
 5. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
 
@@ -66,11 +67,12 @@
    1. `uid` = `{jobPosting.uid}`
    2. `publication_date` = `{jobPosting.publicationDate}`
    3. `title` = `{jobPosting.title}`
-   4. `url` = `{jobPosting.url}`
-   5. `title_vector` = `{jobPosting.titleVector}`
-   6. `content_vector` = `{jobPosting.contentVector}`
-   7. `evaluation_status` = `{jobPosting.evaluationStatus}`
-   8. `response_status` = `{jobPosting.responseStatus}`
-   9. `updated_at` = `now()`
+   4. `company` = `{jobPosting.company}`
+   5. `url` = `{jobPosting.url}`
+   6. `content` = `{jobPosting.content}`
+   7. `content_vector` = `{jobPosting.contentVector}`
+   8. `evaluation_status` = `{jobPosting.evaluationStatus}`
+   9. `response_status` = `{jobPosting.responseStatus}`
+   10. `updated_at` = `now()`
 3. При успешной записи в БД возвращает `HTTP 200`
 4. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа

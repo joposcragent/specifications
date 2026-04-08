@@ -1,19 +1,19 @@
 create table job_postings.postings
 (
-    uuid              uuid                           default gen_random_uuid()                    not null
+    uuid              uuid                           default gen_random_uuid()                     not null
         constraint postings_pk
             primary key,
     uid               varchar                                                                      not null,
-    publication_date  date                                                                         not null,
     title             varchar                                                                      not null,
     url               varchar                                                                      not null,
-    title_vector      real[],
-    content_path      varchar,
+    content           varchar,
     content_vector    real[],
     evaluation_status job_postings.evaluation_status default 'NEW'::job_postings.evaluation_status not null,
-    response_status   job_postings.response_status,
+    response_status   job_postings.response_status  default 'NEW'::job_postings.response_status,
+    publication_date  date                                                                         not null,
     created_at        timestamp with time zone       default now()                                 not null,
-    updated_at        timestamp with time zone
+    updated_at        timestamp with time zone,
+    company           varchar
 );
 
 comment on table job_postings.postings is 'Метаданные вакансий';
@@ -26,9 +26,7 @@ comment on column job_postings.postings.publication_date is 'Дата публи
 
 comment on column job_postings.postings.url is 'URL вакансии на сайте';
 
-comment on column job_postings.postings.title_vector is 'Векторное представление названия';
-
-comment on column job_postings.postings.content_path is 'Путь до содержимого в объектном хранилище';
+comment on column job_postings.postings.content is 'Текст вакансии';
 
 comment on column job_postings.postings.content_vector is 'Векторное представление контента';
 
@@ -38,9 +36,17 @@ comment on column job_postings.postings.response_status is 'Статус отк�
 
 comment on column job_postings.postings.created_at is 'Дата создания записи';
 
+comment on column job_postings.postings.company is 'Название компании';
+
 alter table job_postings.postings
     owner to postgres;
 
 create index postings_uid_index
     on job_postings.postings (uid);
+
+create index postings_company_index
+    on job_postings.postings (company);
+
+create index postings_title_index
+    on job_postings.postings (title);
 
