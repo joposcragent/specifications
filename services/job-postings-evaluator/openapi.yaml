@@ -104,14 +104,14 @@ components:
         - uuid
         - evaluationStatus
     EvaluationStatus:
-      description: Этап процесса оценки вакансии
+      description: Этап процесса оценки вакансии (соответствует enum в БД `job_postings.evaluation_status`)
       type: string
       enum:
         - NEW
         - TITLE_IRRELEVANT
         - PENDING
-        - IRRELEVANTRELEVANT
-        - evaluationStatus
+        - IRRELEVANT
+        - RELEVANT
     ResponseStatus:
       description: Этап рассмотрения вакансии
       type: string

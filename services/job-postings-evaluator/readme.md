@@ -38,6 +38,38 @@
 7. Возвращает `HTTP 200` и тело `JobPostingsUidsEvaluatedList`: для вакансий, полученных на вход (отобранных на шаге 2), их `uuid` и новые значения `evaluationStatus` после выполнения шагов 4–6
 8. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
 
+### Диаграмма последовательности (синхронная оценка)
+
+```mermaid
+sequenceDiagram
+  participant Client
+  participant Evaluator
+  participant Settings
+  participant ST as SentenceTransformer
+  participant DB as Postgres
+
+  Client->>Evaluator: POST /evaluate/sync
+  Evaluator->>Settings: GET relevance-thresholds/GENERAL
+  Evaluator->>Settings: GET relevance-thresholds/TITLE
+  Evaluator->>Settings: GET reference-context
+  Evaluator->>DB: SELECT postings WHERE uuid IN ... AND status IN NEW,PENDING
+  alt нет строк
+    Evaluator-->>Client: 404
+  end
+  loop PENDING записи
+    Evaluator->>ST: POST vectors/cosine-similarity content_vector vs reference
+    Evaluator->>Evaluator: sim vs threshold_general -> RELEVANT или IRRELEVANT
+  end
+  loop NEW записи
+    Evaluator->>ST: POST vectors/cosine-similarity title_vector vs reference
+    Evaluator->>Evaluator: sim vs threshold_title -> PENDING или IRRELEVANT
+  end
+  Evaluator->>DB: UPDATE evaluation_status
+  Evaluator-->>Client: 200 JobPostingsUidsEvaluatedList
+```
+
+Подробности по сборке, запуску и отладке реализации — в README репозитория приложения `app/job-postings-evaluator`.
+
 ## Запуск асинхронного процесса оценки
 
 `POST /evaluate/async`
