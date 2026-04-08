@@ -212,6 +212,13 @@ paths:
               schema:
                 type: string
               example: Не найдено ни одной вакансии
+        '400':
+          description: Не корректный запрос
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Массив list не может быть пустым
         '500':
           $ref: '#/components/responses/UncaughtException'
   /job-postings/search-query/non-existent:
@@ -239,6 +246,13 @@ paths:
               schema:
                 type: string
               example: Не найдено ни одной вакансии
+        '400':
+          description: Не корректный запрос
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Массив list не может быть пустым
         '500':
           $ref: '#/components/responses/UncaughtException'
 
@@ -272,6 +286,7 @@ components:
             - "131927888"
             - "131927889"
             - "131927812"
+          minItems: 1
       required:
         - list
     UuidsList:
@@ -283,6 +298,7 @@ components:
           items:
             type: string
             format: uuid
+          minItems: 1
       required:
         - list
     JobPostingsList:
