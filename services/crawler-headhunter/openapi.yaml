@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: Сканер hh.ru
+  version: 1.0.0
+servers:
+  - url: http://crawler-headhunter:8080/
+  - url: http://localhost:8083/
+tags:
+  - name: crawler
+    description: Контроллер запусука заданий сбора данных с hh.ru
+paths:
+  /crawler/start:
+    post:
+      description: Запуск задания сбора данных с hh.ru
+      tags:
+        - crawler
+      responses: 
+        '200':
+          description: Задание запущено
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+components:
+  schemas: {}
+  responses:
+    UncaughtException:
+      description: Неизвестная ошибка
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: |
+            2020-12-04 15:03:12.926 ERROR 80850 --- [         task-1] .a.i.SimpleAsyncUncaughtExceptionHandler : Unexpected exception occurred invoking async method: public void com.yawintutor.TestService.print(int)
+                java.lang.ArithmeticException: / by zero
+                  at com.yawintutor.TestService.print(TestService.java:15) ~[classes/:na]
+                  at com.yawintutor.TestService$$FastClassBySpringCGLIB$$284b10a4.invoke(<generated>) ~[classes/:na]
+                  at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218) ~[spring-core-5.3.1.jar:5.3.1]
