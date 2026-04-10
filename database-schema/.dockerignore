@@ -3,3 +3,5 @@ docker-compose.yaml
 .dockerignore
 README*
 .git
+build-image.sh
+version
