@@ -11,7 +11,7 @@ create table job_postings.postings
     relevance         real,
     evaluation_status job_postings.evaluation_status default 'NEW'::job_postings.evaluation_status not null,
     response_status   job_postings.response_status   default 'NEW'::job_postings.response_status,
-    publication_date  date                                                                         not null,
+    publication_date  varchar                                                                      not null,
     created_at        timestamp with time zone       default now()                                 not null,
     updated_at        timestamp with time zone,
     company           varchar

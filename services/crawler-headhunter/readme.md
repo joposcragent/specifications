@@ -16,9 +16,15 @@ crawler-headhunter собирает данные с html-страниц сайт
 
 `POST /crawler/start`
 
-| Входной параметр      | Источник     | Описание                             |
-|-----------------------|--------------|--------------------------------------|
-| 📌 `{searchQueries}`  | тело запроса | Список поисковых запросов для hh.ru  |
+| Входной параметр                        | Источник       | Описание                            |
+|-----------------------------------------|----------------|-------------------------------------|
+| 📌 `{searchQueries}`                    | тело запроса   | Список поисковых запросов для hh.ru |
+| 📌 `SELECTOR_VACANCY_LIST_PAGES_LINKS`  | env-переменная | CSS-селектор                        |
+| 📌 `BASE_URL`                           | env-переменная | <http://hh.ru>                      |
+| 📌 `JOB_POSTING_LIST_CARDS`             | env-переменная | CSS-селектор                        |
+| 📌 `SELECTOR_VACANCY_LIST_CARD_TITLE`   | env-переменная | CSS-селектор                        |
+| 📌 `SELECTOR_VACANCY_LIST_CARD_COMPANY` | env-переменная | CSS-селектор                        |
+| 📌 `SELECTOR_VACANCY_CARD_CONTENT`      | env-переменная | CSS-селектор                        |
 
 Алгоритм работы:
 
@@ -29,22 +35,31 @@ crawler-headhunter собирает данные с html-страниц сайт
 4. Для каждого поискового запроса из `{searchQueries.list}`:
    1. Запрашивает у HH.ru количество страниц результатов:
       1. Запрашивает первую страницу поискового запроса;
-      2. Ищет элемент селектором `JOB_POSTING_LIST_PAGES_LINKS` и пересчитывает количество элементов `<li>`;
-      3. Если селектором ничего не нашлось, значит страница только одна.
-   2. Для каждой страницы:
-      1. Собирает карточки вакансий селектором `JOB_POSTING_LIST_CARDS`;
-      2. Из карточек собирает метаданные: `uid`, `title`, `company`, `url`;
-      3. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
+      2. Получает массив ссылок на страницы пагинации селектором `SELECTOR_VACANCY_LIST_PAGES_LINKS`;
+         1. Если массив пустой, значит страница только одна
+         2. Из найденных элементов берет атрибут `href` и строит ссылки `BASE_URL`+`href`, обозначим массив как `{pages}`
+   2. Начинает обход страниц с учетом, что первая уже получена, она в текущем окне и ее заново запрашивать не нужно
+   3. Для каждой страницы:
+      1. Собирает элементы карточек вакансий селектором `JOB_POSTING_LIST_CARDS`;
+      2. Непосредственно из элемента карточки получает атрибут `id`, который является `uid` вакансии;
+      3. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_TITLE` получает название вакансии, это будет `title`;
+      4. Строит `url` путем `BASE_URL` + `/vacancy/` + `uid`;
+      5. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_COMPANY` получает название компании, это будет `company`;
+      6. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
          1. `GET http://job-postings-crud:8080/job-postings/search-query/non-existent`.
-      4. Если новых `uid` нет — прерывает цикл по страницам;
-      5. Для каждой новой вакансии:
-         1. Получает страницу вакансии путем открытия страницы вакансии по `url` в новой вкладке;
-         2. Собирает со страницы вакансии данные: `content`, `publishedDate`;
-         3. Очищает `content` от html-тэгов и разметки;
-         4. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publishedDate`:
+      7. Если новых `uid` нет — прерывает цикл по страницам;
+      8. Для каждой новой вакансии:
+         1. Получает текст вакансии в `content`:
+            1. Селектором `SELECTOR_VACANCY_CARD_CONTENT` находит элемент;
+            2. получает его html-содержимое в виде строки;
+            3. очищает от html-тэгов.
+         2. Получает дату публикации:
+            1. Находит на странице текст `Вакансия опубликована \d+\s\w+\s\d+.*`;
+            2. Этот текст использует в качестве `publicationDate`.
+         3. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
             1. `POST http://job-postings-crud:8080/job-postings/{jobPostingUuid}`;
             2. UUID v4 для `{jobPostingUuid}` crawler генерит сам.
-         5. При возникновении любого исключения — пропускает вакансию и продолжает (skip-and-continue).
+5. При возникновении любого исключения — пропускает вакансию и продолжает (skip-and-continue).
 
 ### Диаграмма последовательности
 
@@ -79,8 +94,8 @@ sequenceDiagram
 
                 loop По всем новым вакансиям
                     Crawler->>+HH: Получить страницу вакансии
-                    HH->>-Crawler: content, publishedDate
-                    Crawler->>Postings: Сохранить вакансию (uid, title, company, url, content, publishedDate)
+                    HH->>-Crawler: content, publicationDate
+                    Crawler->>Postings: Сохранить вакансию (uid, title, company, url, content, publicationDate)
                     Note right of Postings: ошибка → skip-and-continue
                 end
             end
