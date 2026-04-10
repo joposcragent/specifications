@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Сканер hh.ru
-  version: 1.0.0
+  version: 1.0.1
 servers:
   - url: http://crawler-headhunter:8080/
   - url: http://localhost:8083/
@@ -14,13 +14,31 @@ paths:
       description: Запуск задания сбора данных с hh.ru
       tags:
         - crawler
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/SearchQueriesList'
       responses: 
         '200':
           description: Задание запущено
+        '400':
+          description: Bad request
         '500':
           $ref: '#/components/responses/UncaughtException'
 components:
-  schemas: {}
+  schemas:
+    SearchQueriesList:
+      description: Список поисковых запросов
+      type: object
+      properties: 
+        list:
+          type: array
+          items: 
+            type: string
+          minItems: 1
+      required: 
+        - list
   responses:
     UncaughtException:
       description: Неизвестная ошибка

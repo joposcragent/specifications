@@ -8,8 +8,9 @@ create table job_postings.postings
     url               varchar                                                                      not null,
     content           varchar,
     content_vector    real[],
+    relevance         real,
     evaluation_status job_postings.evaluation_status default 'NEW'::job_postings.evaluation_status not null,
-    response_status   job_postings.response_status  default 'NEW'::job_postings.response_status,
+    response_status   job_postings.response_status   default 'NEW'::job_postings.response_status,
     publication_date  date                                                                         not null,
     created_at        timestamp with time zone       default now()                                 not null,
     updated_at        timestamp with time zone,
@@ -22,8 +23,6 @@ comment on column job_postings.postings.uuid is 'Внутренний UUID ва�
 
 comment on column job_postings.postings.uid is 'Уникальный ID вакансии на сайте вакансий';
 
-comment on column job_postings.postings.publication_date is 'Дата публикации на сайте';
-
 comment on column job_postings.postings.url is 'URL вакансии на сайте';
 
 comment on column job_postings.postings.content is 'Текст вакансии';
@@ -33,6 +32,8 @@ comment on column job_postings.postings.content_vector is 'Векторное п
 comment on column job_postings.postings.evaluation_status is 'Статус автоматического процесса оценки ';
 
 comment on column job_postings.postings.response_status is 'Статус отклика, проставляется вручную';
+
+comment on column job_postings.postings.publication_date is 'Дата публикации на сайте';
 
 comment on column job_postings.postings.created_at is 'Дата создания записи';
 

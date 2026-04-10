@@ -1,4 +1,1 @@
-DO $$
-BEGIN
-    NULL;
-END $$;
+CREATE EXTENSION IF NOT EXISTS vector;

@@ -127,64 +127,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/SearchQueriesItem"
 
-  /query-selector/list:
-    get:
-      description: Получение списка CSS-селекторов
-      tags:
-        - query-selector
-      responses:
-        "200":
-          description: Список установленных селекторов
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CssQuerySelectorsList"
-        "500":
-          $ref: "#/components/responses/UncaughtException"
-  /query-selector/{selectorType}:
-    get:
-      description: Получение селектора
-      tags:
-        - query-selector
-      parameters:
-        - $ref: "#/components/parameters/SelectorType"
-      responses:
-        "200":
-          description: CSS-селектор
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CssQuerySelectorItem"
-        "500":
-          $ref: "#/components/responses/UncaughtException"
-    post:
-      description: Установка селектора
-      tags:
-        - query-selector
-      parameters:
-        - $ref: "#/components/parameters/SelectorType"
-      requestBody:
-        content:
-          text/plain:
-            schema:
-              type: string
-      responses:
-        "200":
-          description: CSS-селектор установлен
-        "500":
-          $ref: "#/components/responses/UncaughtException"
-    delete:
-      description: Очистка селектора
-      tags:
-        - query-selector
-      parameters:
-        - $ref: "#/components/parameters/SelectorType"
-      responses:
-        "200":
-          description: CSS-селектор удален
-        "500":
-          $ref: "#/components/responses/UncaughtException"
-
   /relevance-thresholds/list:
     get:
       description: Получить все пороги релевантности
@@ -282,39 +224,6 @@ components:
       required:
         - uuid
         - query
-    CssQuerySelectorsList:
-      type: object
-      properties:
-        list:
-          type: array
-          items:
-            $ref: "#/components/schemas/CssQuerySelectorItem"
-      required:
-        - list
-    CssQuerySelectorItem:
-      type: object
-      properties:
-        selector:
-          type: string
-        type:
-          $ref: "#/components/schemas/CssQuerySelectorType"
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - selector
-        - type
-    CssQuerySelectorType:
-      type: string
-      enum:
-        - JOB_POSTING_LIST_CARDS
-        - JOB_POSTING_LIST_CARD_TITLE
-        - JOB_POSTING_LIST_CARD_CONTENT_LINK
-        - JOB_POSTING_LIST_PAGES_LINKS
-        - JOB_POSTING_CARD_CONTENT
     RelevanceThresholdsList:
       type: object
       properties:
@@ -353,12 +262,6 @@ components:
       in: path
       schema:
         $ref: "#/components/schemas/RelevanceThresholdType"
-      required: true
-    SelectorType:
-      name: selectorType
-      in: path
-      schema:
-        $ref: "#/components/schemas/CssQuerySelectorType"
       required: true
     EntityUuid:
       name: entityUuid
