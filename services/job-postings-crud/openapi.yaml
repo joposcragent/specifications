@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -61,7 +61,7 @@ paths:
                   value: Вакансия с uuid 00000000-0000-0000-0000-000000000001 уже есть в БД
         '500':
           $ref: '#/components/responses/UncaughtException'
-    put:
+    patch:
       description: Обновление данных вакансии
       parameters:
         - $ref: '#/components/parameters/RequiredEntityUuid'
@@ -84,6 +84,7 @@ paths:
               example: "404 NOT_FOUND"
         '500':
           $ref: '#/components/responses/UncaughtException'
+
   /job-postings/{jobPostingUuid}/evaluation-status/{status}:
     post:
       description: Изменение статуса оценки вакансии
@@ -371,10 +372,7 @@ components:
         - company
 
     JobPostingsItemWrite:
-      description: |
-        Тело запроса при создании/обновлении. Поля `createdAt` и `updatedAt` в запросе игнорируются.
-        При создании для `evaluationStatus` по умолчанию используется `NEW`, если поле не передано;
-        `responseStatus` и векторы могут быть null.
+      description: Должен содержать хотя бы одно поле, отсутствующие поля не обновляются, чтобы удалить значение поля, передать поле с null
       type: object
       properties:
         uid:
@@ -395,6 +393,7 @@ components:
           type: array
           items:
             type: number
+            format: double
           example:
             - -0.03144988417625427
             - 0.03998693823814392
@@ -415,11 +414,9 @@ components:
         publicationDate:
           type: string
           format: date-time
-      required:
-        - uid
-        - title
-        - url
-        - company
+        relevance:
+          type: number
+          format: double
 
   parameters:
     RequiredEntityUuid:

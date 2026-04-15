@@ -52,27 +52,30 @@
 
 ## Обновление данных вакансии
 
-`PUT /job-postings/{jobPostingUuid}`
+`PATCH /job-postings/{jobPostingUuid}`
 
-| Входной параметр      | Источник      | Описание                                             |
-|-----------------------|---------------|------------------------------------------------------|
-| 📌 `{jobPostingUuid}` | path-параметр | Внутренний UUID вакансии                             |
-| 📌 `{jobPosting}`     | тело запроса  | Объект `JobPostingsItemWrite` с обновлёнными данными |
+| Входной параметр      | Источник      | Описание                                                           |
+|-----------------------|---------------|--------------------------------------------------------------------|
+| 📌 `{jobPostingUuid}` | path-параметр | Внутренний UUID вакансии                                           |
+| 📌 `{jobPosting}`     | тело запроса  | Ни одно поле не обязательно, но должно присутствовать хотя бы одно |
 
 Алгоритм работы:
 
-1. Проверяет наличие в таблице `postings` строки с `uuid` = `{jobPostingUuid}`
+1. Проверяет, что в `{jobPosting}` присутствует хотя бы одно поле из набора, допустимого для `JobPostingsItemWrite`
+   1. Если ни одного поля нет, возвращает `HTTP 400`
+2. Проверяет наличие в таблице `postings` строки с `uuid` = `{jobPostingUuid}`
    1. Если строка не найдена, возвращает `HTTP 404`
-2. Обновляет поля найденной строки:
-   1. `uid` = `{jobPosting.uid}`
-   2. `publication_date` = `{jobPosting.publicationDate}`
-   3. `title` = `{jobPosting.title}`
-   4. `company` = `{jobPosting.company}`
-   5. `url` = `{jobPosting.url}`
-   6. `content` = `{jobPosting.content}`
-   7. `content_vector` = `{jobPosting.contentVector}`
-   8. `evaluation_status` = `{jobPosting.evaluationStatus}`
-   9. `response_status` = `{jobPosting.responseStatus}`
-   10. `updated_at` = `now()`
-3. При успешной записи в БД возвращает `HTTP 200`
-4. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
+3. Обновляет в найденной строке **только те** столбцы, для которых в `{jobPosting}` задано соответствующее поле; остальные столбцы не меняются. Для каждого присутствующего в теле поля:
+   1. если задано `uid`, то `uid` = `{jobPosting.uid}`
+   2. если задано `publicationDate`, то `publication_date` = `{jobPosting.publicationDate}`
+   3. если задано `title`, то `title` = `{jobPosting.title}`
+   4. если задано `company`, то `company` = `{jobPosting.company}`
+   5. если задано `url`, то `url` = `{jobPosting.url}`
+   6. если задано `content`, то `content` = `{jobPosting.content}`
+   7. если задано `contentVector`, то `content_vector` = `{jobPosting.contentVector}`
+   8. если задано `evaluationStatus`, то `evaluation_status` = `{jobPosting.evaluationStatus}`
+   9. если задано `responseStatus`, то `response_status` = `{jobPosting.responseStatus}`
+   10. В любом случае выставляет `updated_at` = `now()`
+4. Таким образом, если нужно очистить значение какого-то поля, то JobPostingsItemWrite содержит это поле со значением null
+5. При успешной записи в БД возвращает `HTTP 200`
+6. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
