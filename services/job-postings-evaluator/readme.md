@@ -21,7 +21,7 @@
 Алгоритм работы:
 
 1. Запрашивает у `settings-manager` пороги релевантности и вектор эталонного контекста:
-   1. `GET http://settings-manager:8080/relevance-thresholds/GENERAL` — порог релевантности текста вакансии; обозначим `{threshold_general}`
+   1. `GET http://settings-manager:8080/relevance-thresholds/CONTENT` — порог релевантности текста вакансии; обозначим `{threshold_general}`
    2. `GET http://settings-manager:8080/reference-context` — объект с полем `vector`; обозначим `{reference_vector}`
 2. Выбирает из таблицы `postings` все строки, для которых одновременно выполняется:
    1. `uuid` входит во множество UUID из `{uuids.list}`
@@ -53,7 +53,7 @@ sequenceDiagram
   participant DB as Postgres
 
   Client->>Evaluator: POST /evaluate/sync
-  Evaluator->>Settings: GET relevance-thresholds/GENERAL
+  Evaluator->>Settings: GET relevance-thresholds/CONTENT
   Evaluator->>Settings: GET reference-context
   Evaluator->>DB: SELECT postings WHERE uuid IN ... AND status = PENDING
   alt нет строк

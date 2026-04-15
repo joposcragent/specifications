@@ -236,8 +236,7 @@ components:
     RelevanceThresholdType:
       type: string
       enum:
-        - TITLE
-        - GENERAL
+        - CONTENT
         - NOTIFICATION
     RelevanceThresholdItem:
       type: object
