@@ -1,139 +1,124 @@
 openapi: 3.1.0
 info:
   title: Сервис автоматического оценивания вакансий
-  version: 1.0.0
+  version: 1.2.0
 servers:
   - url: http://job-postings-evaluator:8080/
   - url: http://localhost:8082/
 tags:
   - name: evaluate
-    description: Контроллер автоматического оценивания вакансий
+    description: Контроллер оценивания вакансий
 paths:
-  /evaluate/sync:
+  /evaluate/sync/list:
     post:
-      description: Выполнение оценки переданного массива вакансий
-      tags: 
+      description: Синхронный запуск оценки
+      tags:
         - evaluate
       requestBody: 
+        description: Список UUID вакансий, котрые надо оценить
         content: 
           application/json: 
             schema: 
-              $ref: '#/components/schemas/JobPostingsUidsList'
+              $ref: '#/components/schemas/UuidsList'
       responses: 
-        '200':
-          description: Массив uuid вакансий с оценкой
+        '200': 
+          description: Успешно запущена оценка
           content: 
             application/json: 
               schema: 
-                $ref: '#/components/schemas/JobPostingsUidsEvaluatedList'
+                $ref: '#/components/schemas/SyncEvaluationResult'
+        '400':
+          description: Некорректный запрос
         '404':
-          description: Не найдено ни одной вакансии с такими UUID
+          description: Не найдены вакансии с таким uuid
         '500':
           $ref: '#/components/responses/UncaughtException'
-  /evaluate/async:
+
+  /evaluate/sync/{jobPostingUuid}:
     post:
-      description: Запустить асинхронный процесс оценки
-      tags: 
+      description: Синхронный запуск оценки одной вакансии
+      tags:
         - evaluate
-      responses: 
-        '200':
-          description: Задание запущено
-          content:
-            application/json: 
-              schema:
-                $ref: '#/components/schemas/AsyncJobStatus'
-        '501':
-          description: Not implemented
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-  /evaluate/async/{jobUuid}:
-    get:
-      description: Получение состояния выполнения асинхронного задания
       parameters: 
-        - name: jobUuid
-          in: path
-          schema: 
-            type: string
-            format: uuid
-          required: true
+        - $ref: '#/components/parameters/RequiredEntityUuid'
       responses: 
-        '200':
-          description: Текущий статуст джоба
+        '200': 
+          description: Успешно запущена оценка
           content: 
             application/json: 
               schema: 
-                $ref: '#/components/schemas/AsyncJobStatus'
-        '501':
-          description: Not implemented
+                type: object
+                properties: 
+                  status:
+                    $ref: '#/components/schemas/EvaluationStatus'
+        '400':
+          description: Некорректный запрос
+        '404':
+          description: Не найдены вакансии с таким uuid
         '500':
           $ref: '#/components/responses/UncaughtException'
+          
+
+  /evaluate/async/list:
+    post:
+      description: Асинхронный запуск оценки
+      tags:
+        - evaluate
+      requestBody: 
+        description: Список UUID вакансий, котрые надо оценить
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/UuidsList'
+      responses: 
+        '200': 
+          description: Успешно запущена оценка
+        '400':
+          description: Некорректный запрос
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+          
+
+  /evaluate/async/{jobPostingUuid}:
+    post:
+      description: Асинхронный запуск оценки одной вакансии
+      tags:
+        - evaluate
+      parameters: 
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+      responses: 
+        '200': 
+          description: Успешно запущена оценка
+        '400':
+          description: Некорректный запрос
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+          
+
 components:
   schemas:
-    AsyncJobStatus:
-      type: object
-      properties: 
-        jobUuid:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum:
-            - RUNNING
-            - COMPLETED
-            - FAILED
-      required: 
-        - jobUuid
-    JobPostingsUidsEvaluatedList:
-      type: object
-      properties: 
-        list:
-          type: array
-          items: 
-            $ref: '#/components/schemas/JobPostingsUidsEvaluatedItem'
-      required: 
-        - list
-    JobPostingsUidsEvaluatedItem:
+    SyncEvaluationResult:
+      type: array
+      items:
+        $ref: '#/components/schemas/SyncEvaluationResultItem'
+    SyncEvaluationResultItem:
       type: object
       properties: 
         uuid:
           type: string
           format: uuid
-        evaluationStatus:
+        status:
           $ref: '#/components/schemas/EvaluationStatus'
       required: 
         - uuid
-        - evaluationStatus
+        - status
     EvaluationStatus:
-      description: Этап процесса оценки вакансии (соответствует enum в БД `job_postings.evaluation_status`)
       type: string
       enum:
         - NEW
-        - TITLE_IRRELEVANT
         - PENDING
         - IRRELEVANT
         - RELEVANT
-    ResponseStatus:
-      description: Этап рассмотрения вакансии
-      type: string
-      enum:
-        - NEW
-        - NOT_INTERESTED
-        - RESPONDED
-        - REJECTED
-    JobPostingsUidsList:
-      description: Список внешнийх uid вакансий
-      type: object
-      properties: 
-        list:
-          type: array
-          items: 
-            type: string
-          example: 
-            - 131927888
-            - 131927889
-            - 131927812
-      required: 
-        - list
     UuidsList:
       description: Список любых UUID v4
       type: object
