@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Сервис автоматического оценивания вакансий
-  version: 1.2.0
+  version: 1.3.0
 servers:
   - url: http://job-postings-evaluator:8080/
   - url: http://localhost:8082/
@@ -93,10 +93,32 @@ paths:
           description: Некорректный запрос
         '500':
           $ref: '#/components/responses/UncaughtException'
-          
-
+  /evaluate/async/batch:
+    post:
+      description: Запуск пакетной обработки
+      tags:
+        - evaluate
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/BatchAsyncProcessingParameters'
+      responses: 
+        '200': 
+          description: Успешно запущена оценка
+        '500':
+          $ref: '#/components/responses/UncaughtException'
 components:
   schemas:
+    BatchAsyncProcessingParameters:
+      description: Параметры пакетной обработки
+      type: object
+      properties: 
+        size:
+          type: number
+          minimum: 1
+      required: 
+        - size
     SyncEvaluationResult:
       type: array
       items:
