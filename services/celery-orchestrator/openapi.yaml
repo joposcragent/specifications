@@ -367,6 +367,7 @@ components:
           type: string
           format: uuid
           description: Внешний идентификатор трассировки
+      additionalProperties: true
 
     CollectionQueryEvent:
       type: object
