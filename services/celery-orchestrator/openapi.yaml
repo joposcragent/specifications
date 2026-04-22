@@ -1,0 +1,622 @@
+openapi: 3.1.0
+info:
+  title: Оркестратор Celery (celery-orchestrator)
+  description: |
+    REST API сервиса инкапсуляции работы с брокером Celery (Redis) и учёта оркестрационных задач пайплайна сбора и оценки вакансий (Joposcragent).
+
+    Поведение процесса описано в юзкейсе UC-02 «Оркестрация процесса»; выбор Celery обоснован в ADR-003.
+
+    Ошибки валидации и необработанные исключения могут возвращаться с телом `text/plain`.
+  version: 1.0.0
+servers:
+  - url: http://celery-orchestrator:8080/
+  - url: http://localhost:8084/
+
+tags:
+  - name: queue-broker
+    description: Отправка доменных сообщений в очереди Celery (постановка задач брокеру)
+  - name: tasks
+    description: Создание и ведение записей оркестрационных задач (в т.ч. parent-child)
+
+paths:
+  /queue-broker/events/collection-batch:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер события запуска пакетного сбора (`collection-batch`), соответствующего Celery-задаче с литералом имени `tasks.collection_batch` (или согласованному в реализации имени).
+        Инициирует цикл UC-02 п.1.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionBatchEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /queue-broker/events/collection-query:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер события запуска сбора по одному поисковому запросу (`collection-query`), Celery-задача `tasks.collection_query`.
+        В теле передаётся текст запроса и UUID родительской оркестрационной задачи пакета (`collection-batch`). UC-02 п.2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionQueryEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Родительская задача пакета с указанным UUID не найдена в хранилище оркестратора
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Parent task not found: 00000000-0000-0000-0000-000000000000"
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /queue-broker/events/collection-query-progress:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер промежуточного прогресса по запросу сбора (`collection-query-progress`).
+        Используется crawler-headhunter при переходе между страницами выдачи. UC-02 п.4.2.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionQueryProgressEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Оркестрационная задача `collection-query` с указанным UUID не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /queue-broker/events/collection-query-complete:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер завершения сбора по запросу (`collection-query-complete`) с логом выполнения и результатом.
+        UC-02 п.4.3, п.3.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionQueryCompleteEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Оркестрационная задача `collection-query` с указанным UUID не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /queue-broker/events/evaluation:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер события запуска оценки вакансии (`evaluation`), Celery-задача `tasks.evaluation`.
+        Вызывается после записи новой вакансии (job-postings-crud). UC-02 п.5.
+        Тело может содержать `evaluationTaskUuid` — UUID оркестрационной задачи `EVALUATION`, переданный из job-postings-crud.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluationEnqueueEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Указанная в теле опциональная родительская задача не найдена (если проверка включена)
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /queue-broker/events/evaluation-complete:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер завершения оценки (`evaluation-complete`) с логом и результатом.
+        Генерируется job-postings-evaluator. UC-02 п.7.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluationCompleteEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Оркестрационная задача оценки с указанным UUID не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /queue-broker/events/notification:
+    post:
+      tags:
+        - queue-broker
+      description: |
+        Постановка в брокер события уведомления (`notification`) при релевантности выше порога.
+        UC-02 п.7.1.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationEvent"
+      responses:
+        "204":
+          description: Сообщение принято и передано брокеру (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /tasks:
+    post:
+      tags:
+        - tasks
+      description: |
+        Создание записи оркестрационной задачи в хранилище сервиса (для трассировки, parent-child и визуализации).
+        UUID задачи может быть задан клиентом или сгенерирован сервером — см. схему тела запроса.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrchestrationTaskCreate"
+      responses:
+        "201":
+          description: Задача создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrchestrationTaskCreated"
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Родительская задача с указанным `parentTaskUuid` не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "409":
+          description: Задача с переданным `taskUuid` уже существует
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /tasks/{taskUuid}:
+    get:
+      tags:
+        - tasks
+      description: Получение текущего состояния оркестрационной задачи по UUID (визуализация и диагностика).
+      parameters:
+        - $ref: "#/components/parameters/TaskUuid"
+      responses:
+        "200":
+          description: Задача найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrchestrationTaskView"
+        "404":
+          description: Задача не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /tasks/{taskUuid}/progress:
+    post:
+      tags:
+        - tasks
+      description: |
+        Запись промежуточного результата выполнения (лог, счётчики страниц, произвольный снимок состояния).
+        Не переводит задачу в терминальный статус.
+      parameters:
+        - $ref: "#/components/parameters/TaskUuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrchestrationTaskProgress"
+      responses:
+        "204":
+          description: Прогресс записан (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Задача не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "409":
+          description: Задача уже в терминальном статусе; прогресс не принимается
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /tasks/{taskUuid}/completion:
+    post:
+      tags:
+        - tasks
+      description: |
+        Завершение оркестрационной задачи с фиксацией терминального статуса, итогового лога и результата (или ошибки).
+      parameters:
+        - $ref: "#/components/parameters/TaskUuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrchestrationTaskCompletion"
+      responses:
+        "204":
+          description: Завершение зафиксировано (тело ответа пустое)
+        "400":
+          $ref: "#/components/responses/BadRequestText"
+        "404":
+          description: Задача не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+        "409":
+          description: Задача уже была завершена ранее
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+components:
+  parameters:
+    TaskUuid:
+      name: taskUuid
+      in: path
+      description: UUID оркестрационной задачи
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    UncaughtException:
+      description: Необработанное исключение
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "redis.exceptions.ConnectionError: Error connecting to localhost:6379"
+    BadRequestText:
+      description: Некорректное тело запроса или параметры
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "Validation failed: searchQuery is required"
+
+  schemas:
+    CollectionBatchEvent:
+      description: Метаданные запуска пакета сбора (все поля необязательны)
+      type: object
+      properties:
+        triggeredAt:
+          type: string
+          format: date-time
+          description: Момент инициации (если не передан — подставляется на стороне сервера)
+        correlationId:
+          type: string
+          format: uuid
+          description: Внешний идентификатор трассировки
+
+    CollectionQueryEvent:
+      type: object
+      required:
+        - searchQuery
+        - parentBatchTaskUuid
+      properties:
+        searchQuery:
+          type: string
+          description: Поисковый запрос из настроек (аналог элемента `list[].query` в UC-02)
+        parentBatchTaskUuid:
+          type: string
+          format: uuid
+          description: UUID оркестрационной задачи `COLLECTION_BATCH`, породившей этот запрос
+
+    CollectionQueryProgressEvent:
+      type: object
+      required:
+        - collectionQueryTaskUuid
+      properties:
+        collectionQueryTaskUuid:
+          type: string
+          format: uuid
+          description: UUID оркестрационной задачи `COLLECTION_QUERY`
+        currentPage:
+          type: integer
+          minimum: 1
+          description: Номер текущей страницы выдачи
+        totalPages:
+          type: integer
+          minimum: 1
+          description: Известное число страниц (если определено crawler-ом)
+        executionLogFragment:
+          type: string
+          description: Фрагмент лога для накопления/отображения
+        detail:
+          type: object
+          description: Произвольный структурированный снимок прогресса
+          additionalProperties: true
+
+    CollectionQueryCompleteEvent:
+      type: object
+      required:
+        - collectionQueryTaskUuid
+        - executionLog
+        - result
+      properties:
+        collectionQueryTaskUuid:
+          type: string
+          format: uuid
+        executionLog:
+          $ref: "#/components/schemas/ExecutionLog"
+        result:
+          $ref: "#/components/schemas/CollectionQueryResult"
+
+    EvaluationEnqueueEvent:
+      type: object
+      required:
+        - jobPostingUuid
+      properties:
+        jobPostingUuid:
+          type: string
+          format: uuid
+          description: Внутренний UUID вакансии в job-postings-crud
+        evaluationTaskUuid:
+          type: string
+          format: uuid
+          description: UUID оркестрационной задачи `EVALUATION` (передаётся из job-postings-crud при `POST /job-postings/{uuid}` с телом, содержащим `evaluationTaskUuid`)
+        parentTaskUuid:
+          type: string
+          format: uuid
+          description: Опциональная связь с родительской оркестрационной задачей (например `COLLECTION_QUERY`)
+
+    EvaluationCompleteEvent:
+      type: object
+      required:
+        - evaluationTaskUuid
+        - executionLog
+        - result
+      properties:
+        evaluationTaskUuid:
+          type: string
+          format: uuid
+          description: UUID оркестрационной задачи `EVALUATION`
+        executionLog:
+          $ref: "#/components/schemas/ExecutionLog"
+        result:
+          $ref: "#/components/schemas/EvaluationResult"
+
+    NotificationEvent:
+      type: object
+      required:
+        - jobPostingUuid
+      properties:
+        jobPostingUuid:
+          type: string
+          format: uuid
+        relevanceScore:
+          type: number
+          format: double
+          description: Вычисленная релевантность
+        notificationThreshold:
+          type: number
+          format: double
+          description: Порог, выше которого отправляется уведомление
+        message:
+          type: string
+          description: Текст или краткое описание для канала уведомлений
+        evaluationTaskUuid:
+          type: string
+          format: uuid
+          description: Связь с задачей оценки, породившей уведомление
+
+    ExecutionLog:
+      description: Лог выполнения (структура на усмотрение реализации; минимум — человекочитаемая сводка)
+      oneOf:
+        - type: string
+        - type: object
+          additionalProperties: true
+
+    CollectionQueryResult:
+      description: Итог сбора по запросу (счётчики, списки идентификаторов и т.д.)
+      type: object
+      additionalProperties: true
+
+    EvaluationResult:
+      description: Итог оценки вакансии (релевантность, статусы и т.д.)
+      type: object
+      additionalProperties: true
+
+    OrchestrationTaskType:
+      type: string
+      description: Тип оркестрационной задачи
+      enum:
+        - COLLECTION_BATCH
+        - COLLECTION_QUERY
+        - EVALUATION
+
+    OrchestrationTaskStatus:
+      type: string
+      description: Статус жизненного цикла задачи в хранилище оркестратора
+      enum:
+        - PENDING
+        - RUNNING
+        - SUCCEEDED
+        - FAILED
+        - CANCELLED
+
+    OrchestrationTerminalStatus:
+      type: string
+      description: Терминальный статус при вызове завершения задачи
+      enum:
+        - SUCCEEDED
+        - FAILED
+        - CANCELLED
+
+    OrchestrationTaskCreate:
+      type: object
+      required:
+        - type
+      properties:
+        taskUuid:
+          type: string
+          format: uuid
+          description: Если не задан — генерируется сервером
+        type:
+          $ref: "#/components/schemas/OrchestrationTaskType"
+        parentTaskUuid:
+          type: string
+          format: uuid
+          description: UUID родительской задачи (иерархия parent-child)
+        initialContext:
+          type: object
+          description: Начальный контекст (например `searchQuery`, ссылки на внешние UUID)
+          additionalProperties: true
+
+    OrchestrationTaskCreated:
+      type: object
+      required:
+        - taskUuid
+        - type
+        - status
+      properties:
+        taskUuid:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/OrchestrationTaskType"
+        status:
+          $ref: "#/components/schemas/OrchestrationTaskStatus"
+
+    OrchestrationTaskView:
+      type: object
+      required:
+        - taskUuid
+        - type
+        - status
+      properties:
+        taskUuid:
+          type: string
+          format: uuid
+        parentTaskUuid:
+          type: string
+          format: uuid
+          nullable: true
+        type:
+          $ref: "#/components/schemas/OrchestrationTaskType"
+        status:
+          $ref: "#/components/schemas/OrchestrationTaskStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        initialContext:
+          type: object
+          additionalProperties: true
+        lastProgress:
+          $ref: "#/components/schemas/OrchestrationTaskProgress"
+          nullable: true
+        completion:
+          $ref: "#/components/schemas/OrchestrationTaskCompletion"
+          nullable: true
+
+    OrchestrationTaskProgress:
+      type: object
+      properties:
+        recordedAt:
+          type: string
+          format: date-time
+        executionLogFragment:
+          type: string
+        detail:
+          type: object
+          additionalProperties: true
+
+    OrchestrationTaskCompletion:
+      type: object
+      required:
+        - terminalStatus
+      properties:
+        terminalStatus:
+          $ref: "#/components/schemas/OrchestrationTerminalStatus"
+        executionLog:
+          $ref: "#/components/schemas/ExecutionLog"
+        result:
+          description: Итоговый результат при успешном завершении
+          type: object
+          additionalProperties: true
+        errorMessage:
+          type: string
+          description: Сообщение об ошибке при `FAILED`

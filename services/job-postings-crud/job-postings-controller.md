@@ -25,10 +25,16 @@
 
 `POST /job-postings/{jobPostingUuid}`
 
-| Входной параметр      | Источник      | Описание                                         |
-|-----------------------|---------------|--------------------------------------------------|
-| 📌 `{jobPostingUuid}` | path-параметр | Внутренний UUID вакансии                         |
-| 📌 `{jobPosting}`     | тело запроса  | Объект `JobPostingsItemWrite` с данными вакансии |
+| Входной параметр      | Источник      | Описание                                                                                                |
+|-----------------------|---------------|---------------------------------------------------------------------------------------------------------|
+| 📌 `{jobPostingUuid}` | path-параметр | Внутренний UUID вакансии                                                                                |
+| 📌 `{jobPosting}`     | тело запроса  | Объект `JobPostingsItemWrite` с данными вакансии                                                        |
+| `evaluationTaskUuid`  | тело (опц.)   | UUID оркестрационной задачи `EVALUATION` в [celery-orchestrator]                                        |
+| `parentTaskUuid`      | тело (опц.)   | Передаётся в теле `POST …/queue-broker/events/evaluation` оркестратора как связь с родительской задачей |
+| `relevance`           | тело (опц.)   | Релевантность; **обязательно**, если задан `evaluationTaskUuid` и ожидается успешный ответ `HTTP 200`   |
+| `evaluationStatus`    | тело (опц.)   | Статус оценки; **обязателен** при том же условии, что и для `relevance`                                 |
+
+Базовый URL сервиса **celery-orchestrator** задаётся конфигурацией (например переменная окружения `CELERY_ORCHESTRATOR_BASE_URL`, по умолчанию `http://celery-orchestrator:8080`). Успешный ответ оркестратора на события очереди — `HTTP 204`.
 
 Алгоритм работы:
 
@@ -47,8 +53,12 @@
    8. `content_vector` = `{jobPosting.contentVector}`
    9. `evaluation_status` = `{jobPosting.evaluationStatus}`
    10. `response_status` = `{jobPosting.responseStatus}`
-4. При успешной записи в БД возвращает `HTTP 200`
-5. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
+   11. если в теле задано поле `relevance`, сохраняет его в столбец `relevance` (при наличии столбца в схеме БД)
+4. Если в `{jobPosting}` заполнено поле `evaluationTaskUuid`:
+   1. Выполняет `POST {CELERY_ORCHESTRATOR_BASE_URL}/queue-broker/events/evaluation` с телом JSON `EvaluationEnqueueEvent`: `jobPostingUuid` = `{jobPostingUuid}`, `evaluationTaskUuid` = `{jobPosting.evaluationTaskUuid}`, при наличии в теле — `parentTaskUuid` = `{jobPosting.parentTaskUuid}`
+5. Если при обработке запроса возникает **не перехваченное** исключение **И** поле `evaluationTaskUuid` заполнено:
+    1. выполняет `POST …/queue-broker/events/evaluation-complete` с тем же `evaluationTaskUuid`, `executionLog` с описанием сбоя и `result`, содержащим признак ошибки, например поля `error` = `true`, `errorMessage` — текст исключения (и при наличии `errorType`)
+6. Возвращает `HTTP 200` (тело ответа пустое)
 
 ## Обновление данных вакансии
 
@@ -79,3 +89,6 @@
 4. Таким образом, если нужно очистить значение какого-то поля, то JobPostingsItemWrite содержит это поле со значением null
 5. При успешной записи в БД возвращает `HTTP 200`
 6. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
+
+<!--LINKS-->
+[celery-orchestrator]: ../celery-orchestrator/openapi.yaml

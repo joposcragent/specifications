@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.1.0
+  version: 1.2.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -35,6 +35,13 @@ paths:
       description: |
         Сохранение новой вакансии. Идентификатор в пути задаёт `uuid` записи в БД;
         поле `uuid` в теле, если передано, должно совпадать с путём (рекомендуется дублировать для единообразия JSON).
+
+        Если в теле задано непустое `evaluationTaskUuid`, после успешной вставки строки в БД сервис вызывает
+        [celery-orchestrator](../celery-orchestrator/openapi.yaml): `POST /queue-broker/events/evaluation` с телом
+        `EvaluationEnqueueEvent` (`jobPostingUuid` из пути, `evaluationTaskUuid` из тела, при наличии — `parentTaskUuid` из тела).
+        Перед ответом `HTTP 200` дополнительно вызывается `POST /queue-broker/events/evaluation-complete` с итогом
+        (`relevance`, `evaluationStatus` из тела запроса). При необработанном исключении перед ответом `HTTP 500`
+        выполняется попытка вызова `evaluation-complete` с описанием ошибки в поле `result`.
       parameters:
         - $ref: '#/components/parameters/RequiredEntityUuid'
       requestBody:
@@ -372,7 +379,9 @@ components:
         - company
 
     JobPostingsItemWrite:
-      description: Должен содержать хотя бы одно поле, отсутствующие поля не обновляются, чтобы удалить значение поля, передать поле с null
+      description: |
+        Должен содержать хотя бы одно поле, отсутствующие поля не обновляются, чтобы удалить значение поля, передать поле с null.
+        Для `POST /job-postings/{jobPostingUuid}` при непустом `evaluationTaskUuid` дополнительно обязательны `relevance` и `evaluationStatus` (см. описание операции).
       type: object
       properties:
         uid:
@@ -417,6 +426,20 @@ components:
         relevance:
           type: number
           format: double
+        evaluationTaskUuid:
+          type: string
+          format: uuid
+          description: |
+            UUID оркестрационной задачи оценки в celery-orchestrator. Учитывается только при `POST` создания записи:
+            после вставки posting сервис отправляет в брокер события `evaluation` и (при успехе) `evaluation-complete`;
+            при ошибке сохранения — `evaluation-complete` с ошибкой в `result` (см. описание операции `POST`).
+            При `PATCH` поле игнорируется.
+        parentTaskUuid:
+          type: string
+          format: uuid
+          description: |
+            При `POST` создания вакансии опционально передаётся в теле `POST /queue-broker/events/evaluation` как `parentTaskUuid`
+            (родительская оркестрационная задача, например `COLLECTION_QUERY`). При `PATCH` игнорируется.
 
   parameters:
     RequiredEntityUuid:
