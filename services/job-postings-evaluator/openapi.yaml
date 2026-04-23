@@ -153,6 +153,14 @@ components:
       required: 
         - list
   parameters:
+    CorrelationId:
+      description: correlationId асинхронной задачи; если задан, то `async`-эндпоинты должны отправлять события в очередь брокера Celery Orchestrator
+      name: X-Joposcragent-correlationId
+      in: header
+      schema:
+        type: string
+        format: uuid
+      required: false
     RequiredEntityUuid:
       name: jobPostingUuid
       in: path

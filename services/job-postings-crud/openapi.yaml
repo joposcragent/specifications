@@ -37,6 +37,7 @@ paths:
         поле `uuid` в теле, если передано, должно совпадать с путём (рекомендуется дублировать для единообразия JSON).
       parameters:
         - $ref: '#/components/parameters/RequiredEntityUuid'
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         description: Данные вакансии
         required: true
@@ -84,7 +85,6 @@ paths:
               example: "404 NOT_FOUND"
         '500':
           $ref: '#/components/responses/UncaughtException'
-
   /job-postings/{jobPostingUuid}/evaluation-status/{status}:
     post:
       description: Изменение статуса оценки вакансии
@@ -419,6 +419,14 @@ components:
           format: double
 
   parameters:
+    CorrelationId:
+      description: correlationId асинхронной задачи; если задан, то некоторые эндпоинты должны отправлять события в очередь брокера Celery Orchestrator
+      name: X-Joposcragent-correlationId
+      in: header
+      schema:
+        type: string
+        format: uuid
+      required: false
     RequiredEntityUuid:
       name: jobPostingUuid
       in: path
