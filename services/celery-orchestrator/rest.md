@@ -11,10 +11,9 @@
 Алгоритм работы:
 
 1. Безусловно и без всяких проверок ставит celery-задачу типа `task.progress` в очередь.
-2. Поля тела запроса `{EventInputData}.correlationId`, `{EventInputData}.createdAt`, `{EventInputData}.executionLog` передает в kwargs.
-3. Ключи и значения из объекта `{EventInputData}.properties` передает в `properties` celery-задачи.
-4. При успешной передаче сообщения брокеру возвращает **`HTTP 204`** без тела ответа.
-5. При возникновении любого необработанного исключения возвращает **`HTTP 500`** с телом `text/plain` — текст исключения.
+2. Все поля тела запроса передает в `kwargs` celery-задачи.
+3. При успешной передаче сообщения брокеру возвращает **`HTTP 204`** без тела ответа.
+4. При возникновении любого необработанного исключения возвращает **`HTTP 500`** с телом `text/plain` — текст исключения.
 
 ## `POST /events-queue/finish`
 
@@ -25,11 +24,12 @@
 Алгоритм работы:
 
 1. Безусловно и без всяких проверок ставит celery-задачу типа `task.finish` в очередь.
-2. Поля тела запроса `{FinishEventInputData}.correlationId`, `{FinishEventInputData}.createdAt`, `{FinishEventInputData}.status`, `{FinishEventInputData}.executionLog` передает в kwargs.
-3. Ключи и значения из объекта `{FinishEventInputData}.properties` передает в `properties` celery-задачи.
-4. Значение `{FinishEventInputData}.result` передает в поле `Result` celery-задачи.
-5. При успешной передаче сообщения брокеру возвращает **`HTTP 204`** без тела ответа.
-6. При возникновении любого необработанного исключения возвращает **`HTTP 500`** с телом `text/plain` — текст исключения.
+2. Все поля тела запроса передает в `kwargs` celery-задачи.
+3. Добавляет в `kwargs` поля:
+   1. `parentTaskResult` = `{FinishEventInputData}.result`;
+   2. `parentTaskStatus` = `{FinishEventInputData}.status`.
+4. При успешной передаче сообщения брокеру возвращает **`HTTP 204`** без тела ответа.
+5. При возникновении любого необработанного исключения возвращает **`HTTP 500`** с телом `text/plain` — текст исключения.
 
 ## `POST /events-queue/{eventName}`
 
@@ -40,11 +40,10 @@
 
 Алгоритм работы:
 
-1. Безусловно и без всяких проверок ставит celery-задачу, соответствующую значению `{eventName}`, в очередь.
-2. Поля тела запроса `{EventInputData}.correlationId`, `{EventInputData}.createdAt`, `{EventInputData}.executionLog` передает в kwargs.
-3. Ключи и значения из объекта `{EventInputData}.properties` передает в `properties` celery-задачи.
-4. При успешной передаче сообщения брокеру возвращает **`HTTP 204`** без тела ответа.
-5. При возникновении любого необработанного исключения возвращает **`HTTP 500`** с телом `text/plain` — текст исключения.
+1. Безусловно и без всяких проверок ставит celery-задачу, соответствующую значению `task.{eventName}`, в очередь.
+2. Все поля тела запроса передает в `kwargs` celery-задачи.
+3. При успешной передаче сообщения брокеру возвращает **`HTTP 204`** без тела ответа.
+4. При возникновении любого необработанного исключения возвращает **`HTTP 500`** с телом `text/plain` — текст исключения.
 
 ## `GET /tasks/{taskUuid}`
 

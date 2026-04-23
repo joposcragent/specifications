@@ -154,13 +154,11 @@ components:
         executionLog:
           description: Текстовый лог исполнения
           type: string
-        properties:
-          description: Произвольные данные, специфичные для задачи, которые передает исполнитель
-          type: object
-          additionalProperties: true
       required: 
         - correlationId
         - createdAt
+      additionalProperties: true
+      
     FinishEventInputData:
       type: object
       description: Сведения о завершении выполнения асинхронной задачи
@@ -182,14 +180,11 @@ components:
           description: Произвольные данные, специфичные для задачи, которые передает исполнитель, записываются в Result задачи, найденной correlationId
           type: object
           additionalProperties: true
-        properties:
-          description: Произвольные данные, специфичные для задачи, которые передает исполнитель
-          type: object
-          additionalProperties: true
       required: 
         - correlationId
         - createdAt
         - status
+      additionalProperties: true
         
     FinishEventStatus:
       type: string
