@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Сервис автоматического оценивания вакансий
-  version: 1.4.1
+  version: 1.3.0
 servers:
   - url: http://job-postings-evaluator:8080/
   - url: http://localhost:8082/
@@ -81,22 +81,14 @@ paths:
 
   /evaluate/async/{jobPostingUuid}:
     post:
-      description: Асинхронный запуск оценки одной вакансии.
+      description: Асинхронный запуск оценки одной вакансии
       tags:
         - evaluate
       parameters: 
         - $ref: '#/components/parameters/RequiredEntityUuid'
-      requestBody:
-        required: false
-        description: |
-          Опции корреляции с оркестратором. Тело можно опустить или передать `{}`, если вызов `evaluation-complete` не нужен.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AsyncSingleEvaluateOptions'
       responses: 
         '200': 
-          description: Оценка выполнена (тело ответа пустое или без изменений контракта реализации)
+          description: Успешно запущена оценка
         '400':
           description: Некорректный запрос
         '500':
@@ -118,24 +110,6 @@ paths:
           $ref: '#/components/responses/UncaughtException'
 components:
   schemas:
-    AsyncSingleEvaluateOptions:
-      description: |
-        Необязательные поля для связи с celery-orchestrator. Пустой объект или отсутствие тела эквивалентны
-        отсутствию интеграции с брокером.
-      type: object
-      properties:
-        evaluationTaskUuid:
-          type: string
-          format: uuid
-          description: |
-            UUID оркестрационной задачи `EVALUATION`. Если задан, включается отправка `evaluation-complete`
-            в брокер (см. описание операции `POST /evaluate/async/{jobPostingUuid}`).
-        parentTaskUuid:
-          type: string
-          format: uuid
-          description: |
-            Родительская оркестрационная задача (например `COLLECTION_QUERY`). При успешном `evaluation-complete`
-            вкладывается в `result` для трассировки; на маршрутизацию вызова оркестратора не влияет.
     BatchAsyncProcessingParameters:
       description: Параметры пакетной обработки
       type: object
@@ -182,7 +156,6 @@ components:
     RequiredEntityUuid:
       name: jobPostingUuid
       in: path
-      description: Внутренний UUID вакансии
       schema:
         type: string
         format: uuid
