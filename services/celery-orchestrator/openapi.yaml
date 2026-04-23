@@ -154,6 +154,10 @@ components:
         executionLog:
           description: Текстовый лог исполнения
           type: string
+        jobPostingUuid:
+          description: Внутренний UUID вакансии (заполняется не всегда)
+          type: string
+          format: uuid
       required: 
         - correlationId
         - createdAt
@@ -176,6 +180,10 @@ components:
         executionLog:
           description: Текстовый лог исполнения
           type: string
+        jobPostingUuid:
+          description: Внутренний UUID вакансии (заполняется не всегда)
+          type: string
+          format: uuid
         result:
           description: Произвольные данные, специфичные для задачи, которые передает исполнитель, записываются в Result задачи, найденной correlationId
           type: object
