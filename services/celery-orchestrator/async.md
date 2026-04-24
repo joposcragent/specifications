@@ -11,7 +11,7 @@
 3. Для каждого запроса из массива ставит в celery-брокер задачу:
    1. `name` = `task.collection-query`;
    2. `parentId` и `correlation_id` = uuid текущей задачи;
-   3. `kwargs.searchQuery` = `{queryList}[].query`.
+   3. `kwargs.searchQuery` = строка `{queryList}[].query` (один поисковый запрос).
 4. При успешной постановке задач в очередь завершает текущую задачу:
    1. `status` = `SUCCEEDED`;
    2. `result` = `"Запущено ${count} асинхронных процессов сбора вакансий"`, где `count` - количество поставленных в очередь задач.
@@ -20,7 +20,7 @@
 
 | Входной параметр   | Источник                            | Описание        |
 |--------------------|-------------------------------------|-----------------|
-| 📌 `{searchQuery}` | поле `searchQuery` объекта `kwargs` | массив значений |
+| 📌 `{searchQuery}` | поле `searchQuery` объекта `kwargs` | строка поискового запроса |
 
 Алгоритм работы:
 
@@ -28,7 +28,7 @@
    1. `status` = `FAILED`;
    2. `result` = `"Поисковый запрос пустой"`.
 2. Дает команду `crawler-headhunter` на асинхронный сбор `POST /crawler/start`, передавая в теле запроса:
-   1. `list[0]` = `{searchQuery}`;
+   1. поле JSON `query` = `{searchQuery}`;
    2. заголовок `X-Joposcragent-correlationId` = uuid текущей celery-задачи.
 3. Если ответ `crawler-headhunter` отличается от `HTTP 200`, завершает задачу:
    1. `status` = `FAILED`;

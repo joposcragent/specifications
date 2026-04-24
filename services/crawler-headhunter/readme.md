@@ -2,7 +2,7 @@
 
 Сервис сбора новых вакансий с сайта hh.ru.
 
-Сервис представляет из себя backend-приложение на node.js, запускающее playwrite, с его помощью осуществляющее сбор данных с UI сайта hh.ru и запись собранных данных в БД.
+Представляет из себя backend-приложение на node.js, запускающее playwrite, с его помощью осуществляющее сбор данных с UI сайта hh.ru и запись собранных данных в БД.
 
 crawler-headhunter собирает данные с html-страниц сайта hh.ru и сохраняет данные в БД при помощи сервиса [job-postings-crud].
 
@@ -16,50 +16,49 @@ crawler-headhunter собирает данные с html-страниц сайт
 
 `POST /crawler/start`
 
-| Входной параметр                        | Источник       | Описание                            |
-|-----------------------------------------|----------------|-------------------------------------|
-| 📌 `{searchQueries}`                    | тело запроса   | Список поисковых запросов для hh.ru |
-| 📌 `SELECTOR_VACANCY_LIST_PAGES_LINKS`  | env-переменная | CSS-селектор                        |
-| 📌 `BASE_URL`                           | env-переменная | <http://hh.ru>                      |
-| 📌 `JOB_POSTING_LIST_CARDS`             | env-переменная | CSS-селектор                        |
-| 📌 `SELECTOR_VACANCY_LIST_CARD_TITLE`   | env-переменная | CSS-селектор                        |
-| 📌 `SELECTOR_VACANCY_LIST_CARD_COMPANY` | env-переменная | CSS-селектор                        |
-| 📌 `SELECTOR_VACANCY_CARD_CONTENT`      | env-переменная | CSS-селектор                        |
+| Входной параметр                        | Источник                                         | Описание                                       |
+|-----------------------------------------|--------------------------------------------------|------------------------------------------------|
+| 📌 `{searchQuery}`                      | поле `query` тела запроса                        | Поисковый запрос для hh.ru                     |
+| `{correlationId}`                       | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator |
+| 📌 `SELECTOR_VACANCY_LIST_PAGES_LINKS`  | env-переменная                                   | CSS-селектор                                   |
+| 📌 `BASE_URL`                           | env-переменная                                   | <http://hh.ru>                                 |
+| 📌 `JOB_POSTING_LIST_CARDS`             | env-переменная                                   | CSS-селектор                                   |
+| 📌 `SELECTOR_VACANCY_LIST_CARD_TITLE`   | env-переменная                                   | CSS-селектор                                   |
+| 📌 `SELECTOR_VACANCY_LIST_CARD_COMPANY` | env-переменная                                   | CSS-селектор                                   |
+| 📌 `SELECTOR_VACANCY_CARD_CONTENT`      | env-переменная                                   | CSS-селектор                                   |
 
 Алгоритм работы:
 
 1. Если тело запроса не соответствует контракту — возвращает `HTTP 400`.
-2. Если процесс сбора уже запущен — немедленно возвращает `HTTP 200` без запуска нового задания.
-3. Запускает процесс сбора в фоновом потоке и немедленно возвращает `HTTP 200`:
+2. Запускает процесс сбора в фоновом потоке и немедленно возвращает `HTTP 200`:
    1. При возникновении любого исключения в ходе запуска джоба возвращает `HTTP 500` с текстом исключения в теле ответа.
-4. Для каждого поискового запроса из `{searchQueries.list}`:
-   1. Запрашивает у HH.ru количество страниц результатов:
-      1. Запрашивает первую страницу поискового запроса;
-      2. Получает массив ссылок на страницы пагинации селектором `SELECTOR_VACANCY_LIST_PAGES_LINKS`;
-         1. Если массив пустой, значит страница только одна
-         2. Из найденных элементов берет атрибут `href` и строит ссылки `BASE_URL`+`href`, обозначим массив как `{pages}`
-   2. Начинает обход страниц с учетом, что первая уже получена, она в текущем окне и ее заново запрашивать не нужно
-   3. Для каждой страницы:
-      1. Собирает элементы карточек вакансий селектором `JOB_POSTING_LIST_CARDS`;
-      2. Непосредственно из элемента карточки получает атрибут `id`, который является `uid` вакансии;
-      3. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_TITLE` получает название вакансии, это будет `title`;
-      4. Строит `url` путем `BASE_URL` + `/vacancy/` + `uid`;
-      5. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_COMPANY` получает название компании, это будет `company`;
-      6. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
-         1. `GET http://job-postings-crud:8080/job-postings/search-query/non-existent`.
-      7. Если новых `uid` нет — прерывает цикл по страницам;
-      8. Для каждой новой вакансии:
-         1. Получает текст вакансии в `content`:
-            1. Селектором `SELECTOR_VACANCY_CARD_CONTENT` находит элемент;
-            2. получает его html-содержимое в виде строки;
-            3. очищает от html-тэгов.
-         2. Получает дату публикации:
-            1. Находит на странице текст `Вакансия опубликована \d+\s\w+\s\d+.*`;
-            2. Этот текст использует в качестве `publicationDate`.
-         3. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
-            1. `POST http://job-postings-crud:8080/job-postings/{jobPostingUuid}`;
-            2. UUID v4 для `{jobPostingUuid}` crawler генерит сам.
-5. При возникновении любого исключения — пропускает вакансию и продолжает (skip-and-continue).
+3. Вычисляет количество страниц результатов:
+   1. Запрашивает первую страницу поискового запроса `{searchQuery}`;
+   2. Получает массив ссылок на страницы пагинации селектором `SELECTOR_VACANCY_LIST_PAGES_LINKS`;
+      1. Если массив пустой, значит страница только одна
+      2. Из найденных элементов берет атрибут `href` и строит ссылки `BASE_URL`+`href`, обозначим массив как `{pages}`
+4. Начинает обход страниц с учетом, что первая уже получена, она в текущем окне и ее заново запрашивать не нужно.
+5. Для каждой страницы:
+   1. Собирает элементы карточек вакансий селектором `JOB_POSTING_LIST_CARDS`;
+   2. Непосредственно из элемента карточки получает атрибут `id`, который является `uid` вакансии;
+   3. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_TITLE` получает название вакансии, это будет `title`;
+   4. Строит `url` путем `BASE_URL` + `/vacancy/` + `uid`;
+   5. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_COMPANY` получает название компании, это будет `company`;
+   6. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
+      1. `GET http://job-postings-crud:8080/job-postings/search-query/non-existent`.
+   7. Если новых `uid` нет — прерывает цикл по страницам;
+   8. Для каждой новой вакансии:
+      1. Получает текст вакансии в `content`:
+         1. Селектором `SELECTOR_VACANCY_CARD_CONTENT` находит элемент;
+         2. получает его html-содержимое в виде строки;
+         3. очищает от html-тэгов и заменяет неразрывные пробелы (`&nbsp;`) на обычные.
+      2. Получает дату публикации:
+         1. Находит на странице текст `Вакансия опубликована \d+\s\w+\s\d+.*`;
+         2. Этот текст использует в качестве `publicationDate`.
+      3. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
+         1. `POST http://job-postings-crud:8080/job-postings/{jobPostingUuid}`;
+         2. UUID v4 для `{jobPostingUuid}` crawler генерит сам.
+6. При возникновении любого исключения — пропускает вакансию и продолжает (skip-and-continue).
 
 ### Диаграмма последовательности
 
@@ -72,7 +71,7 @@ sequenceDiagram
 
     Note over Crawler: старт процесса: селекторы из env / .env
 
-    Scheduler->>Crawler: POST /crawler/start<br/>{ "list": ["…", "…"] }
+    Scheduler->>Crawler: POST /crawler/start<br/>{ "query": "…" }
 
     alt невалидное тело
         Crawler-->>Scheduler: HTTP 400
@@ -80,24 +79,22 @@ sequenceDiagram
         Crawler-->>Scheduler: HTTP 200 (тихий игнор)
     else
         Crawler-->>Scheduler: HTTP 200
-        Note over Crawler,HH: асинхронный фоновый процесс по list из запроса
+        Note over Crawler,HH: асинхронный фоновый процесс по одному поисковому запросу
 
-        loop По каждому поисковому запросу
-            Crawler->>HH: Запросить количество страниц
+        Crawler->>HH: Запросить количество страниц
 
-            loop По страницам запроса
-                Crawler->>+HH: Собрать вакансии со страницы
-                HH->>-Crawler: uid, title, company, url
-                Crawler->>+Postings: Проверить uid на уникальность
-                Postings->>-Crawler: Только новые uid
-                Crawler->>Crawler: Нет новых uid → прервать цикл по страницам
+        loop По страницам запроса
+            Crawler->>+HH: Собрать вакансии со страницы
+            HH->>-Crawler: uid, title, company, url
+            Crawler->>+Postings: Проверить uid на уникальность
+            Postings->>-Crawler: Только новые uid
+            Crawler->>Crawler: Нет новых uid → прервать цикл по страницам
 
-                loop По всем новым вакансиям
-                    Crawler->>+HH: Получить страницу вакансии
-                    HH->>-Crawler: content, publicationDate
-                    Crawler->>Postings: Сохранить вакансию (uid, title, company, url, content, publicationDate)
-                    Note right of Postings: ошибка → skip-and-continue
-                end
+            loop По всем новым вакансиям
+                Crawler->>+HH: Получить страницу вакансии
+                HH->>-Crawler: content, publicationDate
+                Crawler->>Postings: Сохранить вакансию (uid, title, company, url, content, publicationDate)
+                Note right of Postings: ошибка → skip-and-continue
             end
         end
     end
