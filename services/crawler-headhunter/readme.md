@@ -57,8 +57,28 @@ crawler-headhunter собирает данные с html-страниц сайт
          2. Этот текст использует в качестве `publicationDate`.
       3. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
          1. `POST http://job-postings-crud:8080/job-postings/{jobPostingUuid}`;
-         2. UUID v4 для `{jobPostingUuid}` crawler генерит сам.
-6. При возникновении любого исключения — пропускает вакансию и продолжает (skip-and-continue).
+         2. UUID v4 для `{jobPostingUuid}` crawler генерит сам;
+      4. При возникновении любого исключения, логирует ошибку и продолжает цикл.
+6. Отправка событий progress и finish в в `celery-orchestrator`:
+   1. События отправляются только и исключительно, если заголовок `{correlationId}` был передан содержит не пустую строку.
+   2. После записи каждой вакансии отправляет `POST /events-queue/progress` в `celery-orchestrator`:
+      1. `correlationId` = `{correlationId}`;
+      2. `createdAt` = текущий момент времени;
+      3. `executionLog` = фрагмент лога, сгенерированного во время обработки вакансии (`vacancyLogCapture.takeAndClear()`);
+      4. `jobPostingUuid` = `{jobPostingUuid}`
+      5. `status` - если не было исключений в ходе обработки вакансии, то `"SUCCEEDED"`, иначе `"FAILED"`
+   3. После прохода каждой страницы, если их больше одной, отправляет `POST /events-queue/progress`:
+      1. `correlationId` = `{correlationId}`;
+      2. `createdAt` = текущий момент времени;
+      3. `executionLog` = `"Обработана страница ${текущий номер} из ${всего страниц}"`
+   4. После завершения всей обработки отправляет `POST /events-queue/finish`:
+      1. `correlationId` = `{correlationId}`;
+      2. `createdAt` = текущий момент времени;
+      3. `status` - если не было исключений в ходе обработки, то `"SUCCEEDED"`, иначе `"FAILED"`;
+      4. Если обработано успешно, то `result` = `"Обработано страниц ${сколько обработано}, загружено ${количество} новых вакансий"`;
+      5. Если обработка прервана по исключению:
+         1. `result` = message или любой краткий текст ошибки
+         2. `executionLog` = полный текст исключения
 
 ### Диаграмма последовательности
 
