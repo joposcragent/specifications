@@ -8,7 +8,7 @@ info:
     REST API предназначен только для публикации задач в очередях, а непосредственно работу с задачами выполняет celery worker
   version: 2.0.0
 servers:
-  - url: http://celery-orchestrator:8080/
+  - url: http://celery-orchestrator:8000/
   - url: http://localhost:8084/
 
 tags:
