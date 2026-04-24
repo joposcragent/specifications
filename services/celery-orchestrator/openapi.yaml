@@ -232,6 +232,9 @@ components:
         kwargs:
           type: object
           additionalProperties: true
+        executionLog:
+          description: Текстовый лог исполнения (если был передан при постановке из REST)
+          type: string
         result:
           type: object
           additionalProperties: true
