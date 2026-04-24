@@ -25,10 +25,11 @@
 
 `POST /job-postings/{jobPostingUuid}`
 
-| Входной параметр      | Источник      | Описание                                         |
-|-----------------------|---------------|--------------------------------------------------|
-| 📌 `{jobPostingUuid}` | path-параметр | Внутренний UUID вакансии                         |
-| 📌 `{jobPosting}`     | тело запроса  | Объект `JobPostingsItemWrite` с данными вакансии |
+| Входной параметр      | Источник                                         | Описание                                         |
+|-----------------------|--------------------------------------------------|--------------------------------------------------|
+| 📌 `{jobPostingUuid}` | path-параметр                                    | Внутренний UUID вакансии                         |
+| 📌 `{jobPosting}`     | тело запроса                                     | Объект `JobPostingsItemWrite` с данными вакансии |
+| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator   |
 
 Алгоритм работы:
 
@@ -47,8 +48,25 @@
    8. `content_vector` = `{jobPosting.contentVector}`
    9. `evaluation_status` = `{jobPosting.evaluationStatus}`
    10. `response_status` = `{jobPosting.responseStatus}`
-4. При успешной записи в БД возвращает `HTTP 200`
-5. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
+4. Если был передан не пустой `{correlationId}`, выполняет отправку события оркестратора:
+   1. В случае успешной вставки записи в БД:
+      1. Запрос `POST /events-queue/{eventName}` в `celery-orchestrator`;
+      2. `{eventName}` = `evaluation`;
+      3. `correlationId` = `{correlationId}`
+      4. `createdAt` = текущий момент времени
+      5. `jobPostingUuid` = `{jobPostingUuid}`
+   2. В случае возникновения не перехваченного исключения (п. 6 ниже):
+      1. Запрос `POST /events-queue/progress` в `celery-orchestrator`;
+      2. `correlationId` = `{correlationId}`
+      3. `createdAt` = текущий момент времени
+      4. `jobPostingUuid` = `{jobPostingUuid}`
+      5. `vacancyUrl` = `{jobPosting.url}`
+      6. `executionLog` = текст исключения
+      7. `status` = `FAILED`
+5. При успешной записи в БД возвращает `HTTP 200`.
+6. При возникновении любого не перехваченного исключения:
+   1. Логирует исключение с уровнем `error`
+   2. Возвращает `HTTP 500` с текстом исключения в теле ответа
 
 ## Обновление данных вакансии
 
