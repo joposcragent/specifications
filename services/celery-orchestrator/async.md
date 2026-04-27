@@ -95,4 +95,4 @@
 5. Завершает `{parentTask}` c:
    1. `{parentTask}.status` = `{parentTaskStatus}`;
    2. `{parentTask}.result` = `{parentTaskResult}`.
-6. Завершает текущую задачу с `status` = `SUCCESS`.
+   3. Завершает текущую задачу с `status` = `SUCCESS`.

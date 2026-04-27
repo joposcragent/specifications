@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.1.0
+  version: 1.2.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -149,7 +149,7 @@ paths:
     get:
       description: |
         Получение списка вакансий по простому отбору. Условия по переданным query-параметрам объединяются по AND.
-        Значения `page` и `size` меньше 1 на стороне сервиса приводятся к 1.
+        Результаты сортируются по `uuid` по возрастанию. Значения `page` и `size` меньше 1 на стороне сервиса приводятся к 1.
       parameters:
         - name: uuid
           description: Внутренний UUID вакансии
@@ -172,6 +172,18 @@ paths:
           description: Подстрока названия компании
           schema:
             type: string
+        - name: evaluationStatus
+          in: query
+          description: |
+            Фильтр по статусу оценки; при повторном указании `evaluationStatus` формируется `IN` по переданным значениям
+            (например `evaluationStatus=NEW&evaluationStatus=PENDING`). Без параметра — фильтр не применяется.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/EvaluationStatus'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
