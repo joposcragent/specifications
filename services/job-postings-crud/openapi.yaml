@@ -188,18 +188,11 @@ paths:
         - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Список вакансий
+          description: Список вакансий (в т.ч. пустой, если ничего не подошло под отбор)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobPostingsList'
-        '404':
-          description: Не найдено ни одной вакансии
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: Не найдено ни одной вакансии
         '500':
           $ref: '#/components/responses/UncaughtException'
   /job-postings/search-query/by-uuids:
