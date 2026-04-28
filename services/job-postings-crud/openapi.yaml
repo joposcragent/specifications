@@ -314,6 +314,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JobPostingsItem'
+        totalPages:
+          type: integer
+          minimum: 0
+          description: |
+            Число страниц при текущем отборе и `size` (после нормализации `page` и `size` &lt; 1 к 1).
+            Заполняется в ответе `GET /job-postings/list`. В ответе `POST /job-postings/search-query/by-uuids` поле не передаётся.
       required:
         - list
     JobPostingsItem:
