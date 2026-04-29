@@ -44,9 +44,7 @@ services:
     restart: "no"
 
   flyway:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: joposcragent/flyway:${FLYWAY_IMAGE_TAG:-latest}
     environment:
       FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-joposcragent}
       FLYWAY_USER: ${POSTGRES_USER:-postgres}
