@@ -37,7 +37,7 @@
    1. `text` = `{context}`
    2. `vector` = `{context_vector}`
    3. Если строка была найдена, а не создана, то `updated_at` = `now()`. Если строка была создана, то `updated_at` = `null`
-4. При успешной записи в БД возвращает `HTTP 200` с телом `application/json`: объект `ReferenceContext` с полями `context`, `vector`, `createdAt`, `updatedAt` (как в ответе `GET`)
+4. При успешной записи в БД возвращает `HTTP 200` с телом `application/json`: объект **`ReferenceContextPersisted`** — только поля `vector`, `createdAt`, `updatedAt` (текст эталонного контекста в ответе не передаётся; при необходимости его даёт `GET /reference-context`)
 5. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
 
 [sentence-transformer/text/vectorize]: ../sentence-transformer/readme.md#вычислить-векторное-представление-текста
