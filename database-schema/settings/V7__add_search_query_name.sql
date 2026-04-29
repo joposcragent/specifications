@@ -1,8 +1,8 @@
 alter table settings.search_queries
-    add column name varchar(512);
+    add column name varchar;
 
 update settings.search_queries
-set name = left(query, 512)
+set name = left(query, 100)
 where name is null;
 
 alter table settings.search_queries
