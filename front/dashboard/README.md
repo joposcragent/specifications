@@ -24,7 +24,7 @@
 
 ## Данные и API
 
-Базовый URL: `VITE_JOB_POSTINGS_CRUD_BASE_URL`. Контракт: [services/job-postings-crud/openapi.yaml](../../services/job-postings-crud/openapi.yaml).
+Базовый URL: `VITE_JOB_POSTINGS_CRUD_BASE_URL`. Контракт: [OpenAPI job-postings-crud][job-postings-crud-openapi].
 
 ### Список для таблицы
 
@@ -38,25 +38,22 @@
 | Query-параметр | Поведение |
 |----------------|-----------|
 | `evaluationStatus` | Один или несколько повторов → логика `IN` по enum |
+| `responseStatus` | Один или несколько повторов → логика `IN` по enum `ResponseStatus` |
+| `includeUnsetResponseStatus` | Булево, по умолчанию `false`. Если `true`, в выборку дополнительно попадают строки с `response_status IS NULL` (в сочетании с `responseStatus` условие по статусам и «без статуса» объединяется через **ИЛИ**) |
 | `title` | Подстрока (`LIKE %...%`) |
 | `company` | Подстрока |
 | `uuid`, `uid` | Точечный отбор |
 
-### Требуемый набор данных для постановки (разрыв контракта)
+### Требуемый набор данных для дашборда (контракт)
 
 На дашборде отображать только вакансии **в рассмотрении** в смысле продукта:
 
-- `evaluationStatus === RELEVANT`
-- и (`responseStatus === NEW` **или** статус рассмотрения ещё не выставлен — трактовать как «null / отсутствует в ответе»).
+- `evaluationStatus === RELEVANT` (в запросе: повторяемый query `evaluationStatus=RELEVANT`);
+- и (`responseStatus === NEW` **или** в БД `response_status` ещё не задан — `NULL`).
 
-В текущем OpenAPI для `GET /job-postings/list` **нет** query-параметра `responseStatus`, поэтому комбинацию выше **нельзя** выразить одним запросом без доработки бэкенда.
+**Пример запроса списка:** `GET /job-postings/list?evaluationStatus=RELEVANT&responseStatus=NEW&includeUnsetResponseStatus=true&page=1&size=30` (плюс при необходимости `title`, `company`).
 
-**Минимально инвазивное требование к API:** расширить `GET /job-postings/list` (или ввести узкий эндпоинт «дашборд») параметрами, позволяющими отобрать:
-
-- `evaluationStatus=RELEVANT`
-- и множество по `responseStatus`: как минимум `NEW` **и** семантика «включая записи без установленного responseStatus» (например отдельный флаг `includeUnsetResponseStatus=true` или явное согласование, что `null` в БД попадает в выборку при фильтре `NEW`).
-
-После изменения — обновить OpenAPI и ссылку из этого документа.
+Контракт зафиксирован в [OpenAPI job-postings-crud][job-postings-crud-openapi] (версия **1.3.0** и выше).
 
 ### Колонки таблицы
 
@@ -115,7 +112,7 @@
 ## Открытие страницы (mount)
 
 1. Установить UI в состояние загрузки (скелетон / индикатор в таблице).
-2. Выполнить `GET /job-postings/list` с параметрами дашборда (после появления поддержки `responseStatus` / unset — и ими), `page=1`, `size=30` (или восстановить из query/session — опционально).
+2. Выполнить `GET /job-postings/list` с параметрами дашборда (`evaluationStatus=RELEVANT`, `responseStatus=NEW`, `includeUnsetResponseStatus=true`), `page=1`, `size=30` (или восстановить из query/session — опционально).
 3. **Успех 200:** если `list` пуст — показать пустое состояние («нет подходящих вакансий»), **не** как ошибку.
 4. **Ошибка сети / 5xx / 4xx:** показать сообщение об ошибке; таблица без данных или с сохранённым последним успешным состоянием — на выбор UX, но пустой успешный ответ не смешивать с ошибкой.
 
@@ -126,5 +123,8 @@
 
 ## Связанные спецификации
 
-- [Оболочка приложения](../app-shell/README.md)
-- [job-postings-crud OpenAPI](../../services/job-postings-crud/openapi.yaml)
+- [Оболочка приложения][app-shell-readme]
+- [OpenAPI job-postings-crud][job-postings-crud-openapi]
+
+[job-postings-crud-openapi]: ../../services/job-postings-crud/openapi.yaml
+[app-shell-readme]: ../app-shell/README.md
