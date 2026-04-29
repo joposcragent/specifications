@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_NAME="${IMAGE_NAME:-joposcragent-flyway}"
+IMAGE_NAME="${IMAGE_NAME:-joposcragent/flyway}"
 
 if [[ -n "${IMAGE_VERSION:-}" ]]; then
 	VERSION="$IMAGE_VERSION"
