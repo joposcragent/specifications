@@ -249,6 +249,9 @@ components:
           maxLength: 512
         query:
           type: string
+          description: |
+            Содержимое поиска в формате query-string (часть URL после `?` для выбранной страницы поиска на hh.ru).
+            Допустимо хранение унаследованного полного URL; UI при открытии ссылок может собирать адрес из базы и этой строки.
         createdAt:
           type: string
           format: date-time
@@ -269,6 +272,7 @@ components:
         query:
           type: string
           minLength: 1
+          description: Query-string (после `?`) или унаследованный полный URL hh.ru; см. описание `SearchQueriesItem.query`.
       required:
         - name
         - query
@@ -283,6 +287,7 @@ components:
         query:
           type: string
           minLength: 1
+          description: Query-string (после `?`) или полный URL hh.ru; см. `SearchQueriesItem.query`.
     RelevanceThresholdsList:
       type: object
       properties:
