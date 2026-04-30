@@ -184,6 +184,9 @@ paths:
               properties:
                 value:
                   type: number
+                  minimum: 0
+                  maximum: 1
+                  description: Порог в шкале косинусного сходства (0–1), не проценты
                   example: 0.81946951150894038
               required:
                 - value
@@ -299,6 +302,9 @@ components:
       properties:
         value:
           type: number
+          minimum: 0
+          maximum: 1
+          description: Порог в шкале косинусного сходства (0–1), не проценты
           example: 0.81946951150894038
         type:
           $ref: "#/components/schemas/RelevanceThresholdType"
