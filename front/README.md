@@ -7,7 +7,7 @@
 
 - [Оболочка приложения](app-shell/README.md) — split меню/контент (ширина и скрытие меню, резиновый контент), тема, базовые URL
 - [Дашборд](dashboard/README.md) — релевантные вакансии в рассмотрении, таблица, инлайн-статусы
-- [Оркестратор (Flower)](orchestrator-flower/README.md) — внешняя ссылка из env
+- [Оркестратор (Flower)](orchestrator-flower/README.md) — iframe в контенте, `VITE_FLOWER_BASE_URL`
 - [Эталонный контекст](reference-context/README.md)
 - [Пороги релевантности](relevance-thresholds/README.md)
 - [Поисковые запросы](search-queries/README.md)
@@ -28,7 +28,7 @@
 flowchart LR
   subgraph home [Home]
     dash[Dashboard]
-    orch[FlowerExternal]
+    orch[FlowerIframe]
   end
   subgraph settings [Settings]
     ref[ReferenceContext]
@@ -47,7 +47,7 @@ flowchart LR
 |------------|------------|
 | `VITE_SETTINGS_MANAGER_BASE_URL` | Базовый URL сервиса настроек |
 | `VITE_JOB_POSTINGS_CRUD_BASE_URL` | Базовый URL CRUD вакансий |
-| `VITE_FLOWER_BASE_URL` | Базовый URL Flower (оркестратор); открытие в новой вкладке |
+| `VITE_FLOWER_BASE_URL` | URL Flower для встраивания в iframe на маршруте оркестратора |
 
 Аутентификация на фронте не предусмотрена. CORS настраивается на каждом Spring-сервисе под origin фронта (dev: origin Vite; prod: URL nginx).
 

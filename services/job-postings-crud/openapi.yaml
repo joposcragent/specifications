@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.3.0
+  version: 1.4.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -175,36 +175,27 @@ paths:
         - name: evaluationStatus
           in: query
           description: |
-            Фильтр по статусу оценки; при повторном указании `evaluationStatus` формируется `IN` по переданным значениям
-            (например `evaluationStatus=NEW&evaluationStatus=PENDING`). Без параметра — фильтр не применяется.
+            Повторяемый параметр: каждое значение — литерал `EvaluationStatus` **или** строка `NULL` (без учёта регистра).
+            Несколько значений объединяются по **ИЛИ**: `IN (перечисленные enum)` **или** `IS NULL`, если среди значений было `NULL`.
+            Без параметра — фильтр по полю не применяется.
           required: false
           style: form
           explode: true
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/EvaluationStatus'
+              type: string
         - name: responseStatus
           in: query
           description: |
-            Фильтр по статусу рассмотрения; при повторном указании формируется `IN` по переданным значениям.
-            В сочетании с `includeUnsetResponseStatus=true` в выборку также попадают записи с незаполненным `responseStatus` (NULL в БД).
+            Аналогично `evaluationStatus` для `ResponseStatus` и `response_status IS NULL` при значении `NULL`.
           required: false
           style: form
           explode: true
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/ResponseStatus'
-        - name: includeUnsetResponseStatus
-          in: query
-          description: |
-            Если `true`, к условию по `responseStatus` добавляется объединение по ИЛИ с «статус не задан» (NULL).
-            При отсутствии параметра трактуется как `false`.
-          required: false
-          schema:
-            type: boolean
-            default: false
+              type: string
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -214,6 +205,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobPostingsList'
+        '400':
+          description: Неизвестное значение в `evaluationStatus` / `responseStatus` (кроме `NULL`)
+          content:
+            text/plain:
+              schema:
+                type: string
         '500':
           $ref: '#/components/responses/UncaughtException'
   /job-postings/search-query/by-uuids:
@@ -402,6 +399,7 @@ components:
         - title
         - url
         - company
+        - responseStatus
 
     JobPostingsItemWrite:
       description: Должен содержать хотя бы одно поле, отсутствующие поля не обновляются, чтобы удалить значение поля, передать поле с null
