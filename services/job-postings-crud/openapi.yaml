@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.4.0
+  version: 1.5.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -149,7 +149,8 @@ paths:
     get:
       description: |
         Получение списка вакансий по простому отбору. Условия по переданным query-параметрам объединяются по AND.
-        Результаты сортируются по `uuid` по возрастанию. Значения `page` и `size` меньше 1 на стороне сервиса приводятся к 1.
+        Сортировка задаётся параметром `sort` (см. ниже); если параметр не передан — по умолчанию `uuid` по возрастанию.
+        Значения `page` и `size` меньше 1 на стороне сервиса приводятся к 1.
       parameters:
         - name: uuid
           description: Внутренний UUID вакансии
@@ -196,6 +197,14 @@ paths:
             type: array
             items:
               type: string
+        - name: sort
+          in: query
+          required: false
+          description: |
+            Режим сортировки результата перед пагинацией. Без параметра — `uuid_asc` (как ранее: по `uuid` по возрастанию).
+            `created_at_desc` — по убыванию `created_at`, при равенстве даты — по убыванию `uuid`.
+          schema:
+            $ref: '#/components/schemas/JobPostingListSort'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -206,7 +215,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/JobPostingsList'
         '400':
-          description: Неизвестное значение в `evaluationStatus` / `responseStatus` (кроме `NULL`)
+          description: Неизвестное значение в `evaluationStatus` / `responseStatus` (кроме `NULL`) или в `sort`
           content:
             text/plain:
               schema:
@@ -282,6 +291,12 @@ paths:
 
 components:
   schemas:
+    JobPostingListSort:
+      description: Режим сортировки для `GET /job-postings/list`
+      type: string
+      enum:
+        - uuid_asc
+        - created_at_desc
     EvaluationStatus:
       description: Этап процесса оценки вакансии
       type: string
