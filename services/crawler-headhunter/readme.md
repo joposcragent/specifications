@@ -19,6 +19,7 @@ crawler-headhunter собирает данные с html-страниц сайт
 | Входной параметр                        | Источник                                         | Описание                                       |
 |-----------------------------------------|--------------------------------------------------|------------------------------------------------|
 | 📌 `{searchQuery}`                      | поле `query` тела запроса                        | Поисковый запрос для hh.ru                     |
+| `{lazy}`                                | поле `lazy` тела запроса                         | `boolean`, по умолчанию `false`; см. п. 5.7    |
 | `{correlationId}`                       | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator |
 | 📌 `SELECTOR_VACANCY_LIST_PAGES_LINKS`  | env-переменная                                   | CSS-селектор                                   |
 | 📌 `BASE_URL`                           | env-переменная                                   | <http://hh.ru>                                 |
@@ -46,7 +47,7 @@ crawler-headhunter собирает данные с html-страниц сайт
    5. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_COMPANY` получает название компании, это будет `company`;
    6. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
       1. `GET http://job-postings-crud:8080/job-postings/search-query/non-existent`.
-   7. Если новых `uid` нет — прерывает цикл по страницам;
+   7. Если `{lazy}` равен `true` и новых `uid` нет — прерывает цикл по страницам; если `{lazy}` равен `false` (в том числе по умолчанию при отсутствии поля в теле), цикл по страницам из-за отсутствия новых `uid` не прерывается;
    8. Для каждой новой вакансии:
       1. Получает текст вакансии в `content`:
          1. Селектором `SELECTOR_VACANCY_CARD_CONTENT` находит элемент;
@@ -108,7 +109,9 @@ sequenceDiagram
             HH->>-Crawler: uid, title, company, url
             Crawler->>+Postings: Проверить uid на уникальность
             Postings->>-Crawler: Только новые uid
-            Crawler->>Crawler: Нет новых uid → прервать цикл по страницам
+            alt lazy=true и нет новых uid
+                Crawler->>Crawler: прервать цикл по страницам
+            end
 
             loop По всем новым вакансиям
                 Crawler->>+HH: Получить страницу вакансии
