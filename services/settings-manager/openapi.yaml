@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Управление профилем пользователя
-  version: 1.2.1
+  version: 1.2.2
 servers:
   - url: http://settings-manager:8080/
   - url: http://localhost:8080/
@@ -14,6 +14,8 @@ tags:
     description: Контроллер настройки CSS-селекторов
   - name: relevance-thresholds
     description: Контроллер настройки порогов релевантности
+  - name: prompt-template
+    description: Шаблон промпта для сопроводительного письма
 paths:
   /reference-context:
     get:
@@ -48,6 +50,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReferenceContextPersisted"
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /prompt-template:
+    get:
+      description: Получение шаблона промпта
+      tags:
+        - prompt-template
+      responses:
+        "200":
+          description: Текущий шаблон и метки времени
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptTemplate"
+        "404":
+          description: В таблице нет строки
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+    post:
+      description: Сохранение шаблона промпта
+      tags:
+        - prompt-template
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Шаблон сохранён; тело — актуальный объект PromptTemplate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptTemplate"
         "500":
           $ref: "#/components/responses/UncaughtException"
 
@@ -216,6 +254,23 @@ components:
       required:
         - context
         - vector
+        - createdAt
+    PromptTemplate:
+      type: object
+      description: Шаблон промпта для генерации сопроводительного письма
+      properties:
+        template:
+          type: string
+          nullable: true
+          description: Текст шаблона с плейсхолдерами ${JOB_POSTING_CONTENT} и ${RESUME}
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
         - createdAt
     ReferenceContextPersisted:
       type: object
