@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.5.0
+  version: 1.6.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -136,6 +136,56 @@ paths:
               schema:
                 type: string
               example: "Unknown response status: INVALID"
+        '404':
+          description: Вакансия не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "404 NOT_FOUND"
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /notes/{jobPostingUuid}:
+    get:
+      description: Получение текстовой заметки к вакансии
+      parameters:
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+      responses:
+        '200':
+          description: Текст заметки; при `NULL` в БД возвращается пустая строка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPostingNotesResponse'
+        '404':
+          description: Вакансия не найдена
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "404 NOT_FOUND"
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+    post:
+      description: |
+        Полная замена текста заметки в БД; выставляет `updated_at` в текущий момент (UTC).
+      parameters:
+        - $ref: '#/components/parameters/RequiredEntityUuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobPostingNotesWrite'
+      responses:
+        '200':
+          description: Заметка сохранена (тело ответа пустое)
+        '400':
+          description: Нет тела, невалидный JSON или отсутствует / неверного типа поле `text`
+          content:
+            text/plain:
+              schema:
+                type: string
         '404':
           description: Вакансия не найдена
           content:
@@ -462,6 +512,22 @@ components:
         relevance:
           type: number
           format: double
+    JobPostingNotesResponse:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Текст заметки; при отсутствии значения в БД — пустая строка
+    JobPostingNotesWrite:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Новый текст заметки (полная замена)
 
   parameters:
     CorrelationId:
