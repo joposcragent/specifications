@@ -11,6 +11,7 @@
 - [Эталонный контекст](reference-context/README.md)
 - [Пороги релевантности](relevance-thresholds/README.md)
 - [Поисковые запросы](search-queries/README.md)
+- [Настройка промпта](prompt-template/README.md)
 
 ## Маршруты (логическая карта)
 
@@ -21,6 +22,7 @@
 | Настройки | Эталонный контекст (по умолчанию) | [reference-context/README.md](reference-context/README.md) |
 | Настройки | Пороги релевантности | [relevance-thresholds/README.md](relevance-thresholds/README.md) |
 | Настройки | Поисковые запросы | [search-queries/README.md](search-queries/README.md) |
+| Настройки | Настройка промпта | [prompt-template/README.md](prompt-template/README.md) |
 
 ## Диаграмма навигации
 
@@ -34,6 +36,7 @@ flowchart LR
     ref[ReferenceContext]
     thr[RelevanceThresholds]
     sq[SearchQueries]
+    pt[PromptTemplate]
   end
   shell[AppShell] --> home
   shell --> settings

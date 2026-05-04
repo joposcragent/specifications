@@ -83,3 +83,4 @@
 - [Эталонный контекст](../reference-context/README.md)
 - [Пороги релевантности](../relevance-thresholds/README.md)
 - [Поисковые запросы](../search-queries/README.md)
+- [Настройка промпта](../prompt-template/README.md)
