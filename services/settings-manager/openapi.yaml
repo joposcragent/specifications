@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Управление профилем пользователя
-  version: 1.2.2
+  version: 1.2.0
 servers:
   - url: http://settings-manager:8080/
   - url: http://localhost:8080/
@@ -12,8 +12,6 @@ tags:
     description: Контроллер управления поисковыми запросами
   - name: query-selector
     description: Контроллер настройки CSS-селекторов
-  - name: relevance-thresholds
-    description: Контроллер настройки порогов релевантности
   - name: prompt-template
     description: Шаблон промпта для сопроводительного письма
 paths:
@@ -119,6 +117,10 @@ paths:
             example:
               name: CTO / Tech lead
               query: https://hh.ru/search/vacancy?area=1&items_on_page=20
+              contentRelevance: 0.82
+              notificationRelevance: 0.92
+              isActive: true
+              isLazyScraping: false
       responses:
         "409":
           description: Запрос с таким UUID уже есть в базе
@@ -135,7 +137,8 @@ paths:
       requestBody:
         required: true
         description: >
-          Частичное обновление: допустимо указать только `query`, только `name` или оба поля;
+          Частичное обновление: допустимо передать любое подмножество полей
+          `name`, `query`, `contentRelevance`, `notificationRelevance`, `isActive`, `isLazyScraping`;
           пустое тело или объект без ни одного из полей — ошибка клиента.
         content:
           application/json:
@@ -143,11 +146,12 @@ paths:
               $ref: "#/components/schemas/SearchQueryPatchRequest"
             example:
               query: https://hh.ru/search/vacancy?area=1
+              contentRelevance: 0.85
       responses:
         "404":
           description: Запрос с таким entityUuid не найден
         "400":
-          description: Не передано ни query, ни name для обновления
+          description: Не передано ни одно поле для обновления или нарушены ограничения полей
         "200":
           description: "Обновлен успешно"
     delete:
@@ -171,68 +175,11 @@ paths:
         "404":
           description: Запрос с таким entityUuid не найден
         "200":
-          description: "URL поискового запроса"
+          description: Объект поискового запроса
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchQueriesItem"
-
-  /relevance-thresholds/list:
-    get:
-      description: Получить все пороги релевантности
-      tags:
-        - relevance-thresholds
-      responses:
-        "200":
-          description: Список порого релевантности
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RelevanceThresholdsList"
-        "500":
-          $ref: "#/components/responses/UncaughtException"
-  /relevance-thresholds/{type}:
-    get:
-      description: Получить порог релевантности конкретного типа
-      tags:
-        - relevance-thresholds
-      parameters:
-        - $ref: "#/components/parameters/RelevanceThresholdType"
-      responses:
-        "200":
-          description: Порог релавнтности
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RelevanceThresholdItem"
-        "500":
-          $ref: "#/components/responses/UncaughtException"
-
-    post:
-      description: Установить порог релевантности конкретного типа
-      tags:
-        - relevance-thresholds
-      parameters:
-        - $ref: "#/components/parameters/RelevanceThresholdType"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                value:
-                  type: number
-                  minimum: 0
-                  maximum: 1
-                  description: Порог в шкале косинусного сходства (0–1), не проценты
-                  example: 0.81946951150894038
-              required:
-                - value
-      responses:
-        "200":
-          description: Порог релевантности установлен
-        "500":
-          $ref: "#/components/responses/UncaughtException"
 
 components:
   schemas:
@@ -307,6 +254,26 @@ components:
           description: |
             Содержимое поиска в формате query-string (часть URL после `?` для выбранной страницы поиска на hh.ru).
             Допустимо хранение унаследованного полного URL; UI при открытии ссылок может собирать адрес из базы и этой строки.
+        contentRelevance:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Порог косинусного сходства для классификации контента вакансии (0–1).
+        notificationRelevance:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Порог для будущих уведомлений (0–1); хранится вместе с запросом.
+        isActive:
+          type: boolean
+          description: Участвует ли запрос в плановом сборе (`task.collection-batch`).
+        isLazyScraping:
+          type: boolean
+          description: |
+            При `true` краулер останавливает обход страниц, если на странице нет новых uid;
+            при `false` продолжает следующие страницы.
         createdAt:
           type: string
           format: date-time
@@ -317,6 +284,11 @@ components:
         - uuid
         - name
         - query
+        - contentRelevance
+        - notificationRelevance
+        - isActive
+        - isLazyScraping
+        - createdAt
     SearchQueryCreateRequest:
       type: object
       properties:
@@ -328,9 +300,27 @@ components:
           type: string
           minLength: 1
           description: Query-string (после `?`) или унаследованный полный URL hh.ru; см. описание `SearchQueriesItem.query`.
+        contentRelevance:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        notificationRelevance:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        isActive:
+          type: boolean
+          description: По умолчанию на сервере `true`, если поле не передано.
+        isLazyScraping:
+          type: boolean
+          description: По умолчанию на сервере `false`, если поле не передано.
       required:
         - name
         - query
+        - contentRelevance
+        - notificationRelevance
     SearchQueryPatchRequest:
       type: object
       minProperties: 1
@@ -343,47 +333,21 @@ components:
           type: string
           minLength: 1
           description: Query-string (после `?`) или полный URL hh.ru; см. `SearchQueriesItem.query`.
-    RelevanceThresholdsList:
-      type: object
-      properties:
-        list:
-          type: array
-          items:
-            $ref: "#/components/schemas/RelevanceThresholdItem"
-      required:
-        - list
-    RelevanceThresholdType:
-      type: string
-      enum:
-        - CONTENT
-        - NOTIFICATION
-    RelevanceThresholdItem:
-      type: object
-      properties:
-        value:
+        contentRelevance:
           type: number
+          format: double
           minimum: 0
           maximum: 1
-          description: Порог в шкале косинусного сходства (0–1), не проценты
-          example: 0.81946951150894038
-        type:
-          $ref: "#/components/schemas/RelevanceThresholdType"
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - value
-        - type
+        notificationRelevance:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        isActive:
+          type: boolean
+        isLazyScraping:
+          type: boolean
   parameters:
-    RelevanceThresholdType:
-      name: type
-      in: path
-      schema:
-        $ref: "#/components/schemas/RelevanceThresholdType"
-      required: true
     EntityUuid:
       name: entityUuid
       in: path
