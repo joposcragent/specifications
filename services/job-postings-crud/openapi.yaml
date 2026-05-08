@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.6.0
+  version: 1.7.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -413,6 +413,10 @@ components:
         uuid:
           type: string
           format: uuid
+        searchQueryUuid:
+          type: string
+          format: uuid
+          description: UUID поискового запроса из `settings.search_queries`; связывает вакансию с порогами релевантности.
         uid:
           type: string
           example: "131927888"
@@ -460,6 +464,7 @@ components:
           readOnly: true
       required:
         - uuid
+        - searchQueryUuid
         - uid
         - title
         - url
@@ -467,9 +472,15 @@ components:
         - responseStatus
 
     JobPostingsItemWrite:
-      description: Должен содержать хотя бы одно поле, отсутствующие поля не обновляются, чтобы удалить значение поля, передать поле с null
+      description: |
+        Для `POST` создания вакансии обязательны поля, требуемые сервисом, включая `searchQueryUuid` (не nil UUID).
+        Для `PATCH` допустимо любое непустое подмножество полей; отсутствующие поля не обновляются.
       type: object
       properties:
+        searchQueryUuid:
+          type: string
+          format: uuid
+          description: UUID поискового запроса; при создании обязателен; nil UUID запрещён.
         uid:
           type: string
           example: "131927888"

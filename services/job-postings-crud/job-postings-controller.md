@@ -39,15 +39,16 @@
    1. Если строка найдена, возвращает `HTTP 409` с текстом `Вакансия с uid {jobPosting.uid} уже есть в БД`
 3. Добавляет строку в таблицу `postings`, заполняя поля следующим образом:
    1. `uuid` = `{jobPostingUuid}`
-   2. `uid` = `{jobPosting.uid}`
-   3. `publication_date` = `{jobPosting.publicationDate}`
-   4. `title` = `{jobPosting.title}`
-   5. `company` = `{jobPosting.company}`
-   6. `url` = `{jobPosting.url}`
-   7. `content` = `{jobPosting.content}`
-   8. `content_vector` = `{jobPosting.contentVector}`
-   9. `evaluation_status` = `{jobPosting.evaluationStatus}`
-   10. `response_status` = `{jobPosting.responseStatus}`
+   2. `search_query_uuid` = `{jobPosting.searchQueryUuid}`
+   3. `uid` = `{jobPosting.uid}`
+   4. `publication_date` = `{jobPosting.publicationDate}`
+   5. `title` = `{jobPosting.title}`
+   6. `company` = `{jobPosting.company}`
+   7. `url` = `{jobPosting.url}`
+   8. `content` = `{jobPosting.content}`
+   9. `content_vector` = `{jobPosting.contentVector}`
+   10. `evaluation_status` = `{jobPosting.evaluationStatus}`
+   11. `response_status` = `{jobPosting.responseStatus}`
 4. Если был передан не пустой `{correlationId}`, выполняет отправку события оркестратора:
    1. В случае успешной вставки записи в БД:
       1. Запрос `POST /events-queue/{eventName}` в `celery-orchestrator`;
@@ -84,16 +85,17 @@
 2. Проверяет наличие в таблице `postings` строки с `uuid` = `{jobPostingUuid}`
    1. Если строка не найдена, возвращает `HTTP 404`
 3. Обновляет в найденной строке **только те** столбцы, для которых в `{jobPosting}` задано соответствующее поле; остальные столбцы не меняются. Для каждого присутствующего в теле поля:
-   1. если задано `uid`, то `uid` = `{jobPosting.uid}`
-   2. если задано `publicationDate`, то `publication_date` = `{jobPosting.publicationDate}`
-   3. если задано `title`, то `title` = `{jobPosting.title}`
-   4. если задано `company`, то `company` = `{jobPosting.company}`
-   5. если задано `url`, то `url` = `{jobPosting.url}`
-   6. если задано `content`, то `content` = `{jobPosting.content}`
-   7. если задано `contentVector`, то `content_vector` = `{jobPosting.contentVector}`
-   8. если задано `evaluationStatus`, то `evaluation_status` = `{jobPosting.evaluationStatus}`
-   9. если задано `responseStatus`, то `response_status` = `{jobPosting.responseStatus}`
-   10. В любом случае выставляет `updated_at` = `now()`
+   1. если задано `searchQueryUuid`, то `search_query_uuid` = `{jobPosting.searchQueryUuid}` (nil UUID запрещён)
+   2. если задано `uid`, то `uid` = `{jobPosting.uid}`
+   3. если задано `publicationDate`, то `publication_date` = `{jobPosting.publicationDate}`
+   4. если задано `title`, то `title` = `{jobPosting.title}`
+   5. если задано `company`, то `company` = `{jobPosting.company}`
+   6. если задано `url`, то `url` = `{jobPosting.url}`
+   7. если задано `content`, то `content` = `{jobPosting.content}`
+   8. если задано `contentVector`, то `content_vector` = `{jobPosting.contentVector}`
+   9. если задано `evaluationStatus`, то `evaluation_status` = `{jobPosting.evaluationStatus}`
+   10. если задано `responseStatus`, то `response_status` = `{jobPosting.responseStatus}`
+   11. В любом случае выставляет `updated_at` = `now()`
 4. Таким образом, если нужно очистить значение какого-то поля, то JobPostingsItemWrite содержит это поле со значением null
 5. При успешной записи в БД возвращает `HTTP 200`
 6. При возникновении любого не перехваченного исключения возвращает `HTTP 500` с текстом исключения в теле ответа
