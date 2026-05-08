@@ -9,8 +9,7 @@
 - [Дашборд](dashboard/README.md) — релевантные вакансии в рассмотрении, таблица, инлайн-статусы
 - [Оркестратор (Flower)](orchestrator-flower/README.md) — iframe в контенте, `VITE_FLOWER_BASE_URL`
 - [Эталонный контекст](reference-context/README.md)
-- [Пороги релевантности](relevance-thresholds/README.md)
-- [Поисковые запросы](search-queries/README.md)
+- [Поисковые запросы](search-queries/README.md) — запросы hh.ru, пороги релевантности на строке, флаги активности и «ленивого» сбора
 - [Настройка промпта](prompt-template/README.md)
 
 ## Маршруты (логическая карта)
@@ -20,7 +19,6 @@
 | Главная | Дашборд (по умолчанию) | [dashboard/README.md](dashboard/README.md) |
 | Главная | Оркестратор | [orchestrator-flower/README.md](orchestrator-flower/README.md) |
 | Настройки | Эталонный контекст (по умолчанию) | [reference-context/README.md](reference-context/README.md) |
-| Настройки | Пороги релевантности | [relevance-thresholds/README.md](relevance-thresholds/README.md) |
 | Настройки | Поисковые запросы | [search-queries/README.md](search-queries/README.md) |
 | Настройки | Настройка промпта | [prompt-template/README.md](prompt-template/README.md) |
 
@@ -34,7 +32,6 @@ flowchart LR
   end
   subgraph settings [Settings]
     ref[ReferenceContext]
-    thr[RelevanceThresholds]
     sq[SearchQueries]
     pt[PromptTemplate]
   end
