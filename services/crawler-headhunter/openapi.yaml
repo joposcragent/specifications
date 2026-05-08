@@ -31,11 +31,16 @@ paths:
 components:
   schemas:
     SearchQuery:
-      description: Поисковый запрос, по которому требуеся собрать новые вакансии
+      description: Параметры задания сбора вакансий по одному поисковому запросу
       type: object
       properties:
         query:
           type: string
+          minLength: 1
+        searchQueryUuid:
+          type: string
+          format: uuid
+          description: UUID строки в `settings.search_queries` (передаётся в job-postings-crud при сохранении вакансий).
         lazy:
           type: boolean
           default: false
@@ -44,6 +49,7 @@ components:
             при `false` (по умолчанию) цикл по страницам продолжается.
       required:
         - query
+        - searchQueryUuid
   responses:
     UncaughtException:
       description: Неизвестная ошибка
