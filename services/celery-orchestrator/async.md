@@ -4,7 +4,7 @@
 
 Алгоритм работы:
 
-1. Запросом `GET /search-query/list` к `settings-manager` получает `{queryList}` - массив настроенных поисковых запросов.
+1. Запросом `GET /search-query/list?activeOnly=true` к `settings-manager` получает `{queryList}` — массив **только активных** поисковых запросов (`is_active = true`).
 2. Если список пустой, то сразу завершает задачу:
    1. `status` = `CANCELLED`;
    2. `Result` = текст `"Поисковые запросы не настроены"`.
@@ -12,7 +12,8 @@
    1. `name` = `task.collection-query`;
    2. `parentId` и `correlation_id` = uuid текущей задачи;
    3. `kwargs.searchQuery` = строка `{queryList}[].query` (один поисковый запрос);
-   4. `kwargs.name` = строка `{queryList}[].name` (пользовательское название запроса из `settings-manager`).
+   4. `kwargs.name` = строка `{queryList}[].name` (пользовательское название запроса из `settings-manager`);
+   5. `kwargs.lazy` = `{queryList}[].isLazyScraping`.
 4. При успешной постановке задач в очередь завершает текущую задачу:
    1. `status` = `SUCCEEDED`;
    2. `result` = `"Запущено ${count} асинхронных процессов сбора вакансий"`, где `count` - количество поставленных в очередь задач.

@@ -6,7 +6,7 @@ info:
     Поведение процесса описано в юзкейсе UC-02 «Оркестрация процесса»; выбор Celery обоснован в ADR-003.
 
     REST API предназначен только для публикации задач в очередях, а непосредственно работу с задачами выполняет celery worker
-  version: 2.0.0
+  version: 2.3.1
 servers:
   - url: http://celery-orchestrator:8000/
   - url: http://localhost:8084/
@@ -52,7 +52,14 @@ paths:
           $ref: "#/components/responses/UncaughtException"
   /events-queue/{eventName}:
     post:
-      description: Ставит в очередь задачу `{eventName}`
+      description: |
+        Ставит в очередь задачу `{eventName}`. Тело — JSON-объект, поля попадают в `kwargs` Celery-задачи.
+
+        Воркер **`collection-batch`** запрашивает у settings-manager только активные поисковые запросы:
+        `GET /search-query/list?activeOnly=true`, затем для каждой строки ответа ставит дочернюю **`collection-query`**
+        с полями `searchQuery`, `searchQueryUuid`, `lazy`, `name`, `parentId`.
+
+        Для **`collection-query`** ожидаются как минимум `searchQuery`, `searchQueryUuid`, `lazy` (см. async.md).
       tags:
         - queue-broker
       parameters: 

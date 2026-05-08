@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Управление профилем пользователя
-  version: 1.2.0
+  version: 1.2.1
 servers:
   - url: http://settings-manager:8080/
   - url: http://localhost:8080/
@@ -91,7 +91,17 @@ paths:
     get:
       tags:
         - search-query
-      description: Получение списка настроенных поисковых запросов
+      description: |
+        Получение списка настроенных поисковых запросов.
+        При `activeOnly=true` возвращаются только строки с `isActive = true` (используется плановым `collection-batch` в celery-orchestrator).
+      parameters:
+        - name: activeOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Если true — только активные запросы (`is_active = true` в БД).
       responses:
         "200":
           description: Список запросов
