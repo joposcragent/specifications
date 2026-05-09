@@ -4,7 +4,7 @@ info:
   description: |
     REST API сервиса сохранения и поиска карточек вакансий (Joposcragent).
     Ошибки `ResponseStatusException` и необработанные исключения возвращаются с телом `text/plain`.
-  version: 1.7.0
+  version: 1.8.0
 servers:
   - url: http://job-postings-crud:8080/
   - url: http://localhost:8080/
@@ -201,6 +201,7 @@ paths:
         Получение списка вакансий по простому отбору. Условия по переданным query-параметрам объединяются по AND.
         Сортировка задаётся параметром `sort` (см. ниже); если параметр не передан — по умолчанию `uuid` по возрастанию.
         Значения `page` и `size` меньше 1 на стороне сервиса приводятся к 1.
+        Фильтры `title` и `company` сохраняются для программного использования; текстовый поиск по нескольким полям в UI выполняется через `GET /job-postings/search-query/by-substring`.
       parameters:
         - name: uuid
           description: Внутренний UUID вакансии
@@ -266,6 +267,65 @@ paths:
                 $ref: '#/components/schemas/JobPostingsList'
         '400':
           description: Неизвестное значение в `evaluationStatus` / `responseStatus` (кроме `NULL`) или в `sort`
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /job-postings/search-query/by-substring:
+    get:
+      description: |
+        Поиск вакансий по одной подстроке в полях `uid`, `title`, `url`, `company`.
+        Множество совпадающих строк задаётся как **UNION** четырёх запросов по каждому полю (без объединения условий через OR в одном запросе).
+        К результату применяются те же фильтры по статусам и та же сортировка/пагинация, что у `GET /job-postings/list` (условия по статусам объединяются с отбором по подстроке через AND).
+        Параметр `substring` после обрезки пробелов не должен быть пустым.
+      parameters:
+        - name: substring
+          in: query
+          required: true
+          description: Подстрока для SQL `LIKE %substring%` по каждому из полей в UNION.
+          schema:
+            type: string
+        - name: evaluationStatus
+          in: query
+          description: |
+            Как в `GET /job-postings/list`.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: responseStatus
+          in: query
+          description: |
+            Как в `GET /job-postings/list`.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: sort
+          in: query
+          required: false
+          description: Как в `GET /job-postings/list`.
+          schema:
+            $ref: '#/components/schemas/JobPostingListSort'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Список вакансий (в т.ч. пустой)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPostingsList'
+        '400':
+          description: Пустой `substring` после trim, неизвестное значение в статусах или в `sort`
           content:
             text/plain:
               schema:
