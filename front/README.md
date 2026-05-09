@@ -7,6 +7,7 @@
 
 - [Оболочка приложения](app-shell/README.md) — split меню/контент (ширина и скрытие меню, резиновый контент), тема, базовые URL
 - [Дашборд](dashboard/README.md) — релевантные вакансии в рассмотрении, таблица, инлайн-статусы
+- [Таблица вакансий и карточка](job-postings-panel/README.md) — общая панель таблицы (дашборд и «Вакансии»), модалка полей, кнопка переоценки `POST /evaluate/sync/{uuid}`
 - [Оркестратор (Flower)](orchestrator-flower/README.md) — iframe в контенте, `VITE_FLOWER_BASE_URL`
 - [Эталонный контекст](reference-context/README.md)
 - [Поисковые запросы](search-queries/README.md) — запросы hh.ru, пороги релевантности на строке, флаги активности и «ленивого» сбора
@@ -47,6 +48,7 @@ flowchart LR
 |------------|------------|
 | `VITE_SETTINGS_MANAGER_BASE_URL` | Базовый URL сервиса настроек |
 | `VITE_JOB_POSTINGS_CRUD_BASE_URL` | Базовый URL CRUD вакансий |
+| `VITE_JOB_POSTINGS_EVALUATOR_BASE_URL` | Базовый URL сервиса оценивания вакансий (`/evaluate/...`); пусто — same-origin (nginx/Vite proxy) |
 | `VITE_FLOWER_BASE_URL` | URL Flower для встраивания в iframe на маршруте оркестратора |
 
 Аутентификация на фронте не предусмотрена. CORS настраивается на каждом Spring-сервисе под origin фронта (dev: origin Vite; prod: URL nginx).
@@ -54,6 +56,7 @@ flowchart LR
 ## Бэкенд-контракты
 
 - Вакансии: [services/job-postings-crud/openapi.yaml](../services/job-postings-crud/openapi.yaml)
+- Оценивание вакансий: [services/job-postings-evaluator/openapi.yaml](../services/job-postings-evaluator/openapi.yaml)
 - Настройки: [services/settings-manager/openapi.yaml](../services/settings-manager/openapi.yaml)
 
 ## Визуальный ориентир

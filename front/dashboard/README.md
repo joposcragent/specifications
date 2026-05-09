@@ -65,7 +65,7 @@
 
 | Колонка | Источник / поведение |
 |---------|----------------------|
-| Название | `title`, текст; клик по названию — модалка с полным `content` |
+| Название | `title`, текст; клик по названию — [модалка-карточка][job-postings-panel-readme] со всеми полями и переоценкой |
 | Промпт | Только дашборд: кнопка **📃** — `GET /prompt-template`, `GET /reference-context`, подстановка `${JOB_POSTING_CONTENT}` / `${RESUME}` в шаблон, модалка с текстом |
 | URL | `url`, ссылка `target="_blank"`, `rel="noopener noreferrer"` |
 | Статус оценки | Dropdown enum `EvaluationStatus`; сохранение по завершении выбора |
@@ -112,9 +112,9 @@
 - **Клик по 📃** в колонке «Промпт»: запросы `GET /prompt-template` и `GET /reference-context` (базовый URL настроек), подстановка в шаблон литералов `${JOB_POSTING_CONTENT}` и `${RESUME}` на текст вакансии (`content` строки) и эталонный контекст; открыть модалку с итоговым текстом.
 - При отсутствии эталонного контекста (**404** / **202** на `GET /reference-context`) — сообщение пользователю, модалку не открывать.
 
-### Модалка текста вакансии
+### Карточка вакансии (модалка по клику на название)
 
-- **Клик по «Показать текст»** у названия: открыть модальное окно с полным `content`; закрытие по кнопке / клику вне / ESC — по стандарту библиотеки.
+- Полное описание полей, изменяемый размер окна, даты с tooltip, кнопка **«Оценить»** (`POST /evaluate/sync/{uuid}`) — см. [Таблица вакансий и карточка][job-postings-panel-readme].
 
 ### Dropdown статусов
 
@@ -136,9 +136,11 @@
 ## Связанные спецификации
 
 - [Оболочка приложения][app-shell-readme]
+- [Таблица вакансий и карточка][job-postings-panel-readme]
 - [Настройка промпта][prompt-template-readme]
 - [OpenAPI job-postings-crud][job-postings-crud-openapi]
 
 [job-postings-crud-openapi]: ../../services/job-postings-crud/openapi.yaml
 [app-shell-readme]: ../app-shell/README.md
+[job-postings-panel-readme]: ../job-postings-panel/README.md
 [prompt-template-readme]: ../prompt-template/README.md
