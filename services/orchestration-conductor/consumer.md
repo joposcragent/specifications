@@ -106,18 +106,25 @@
 2. Десериализует и валидирует `{MessagePayload}.jsonData`, назовем значение `{jobPostingItem}`:
    1. Ожидает, что в jsonData лежит объект со структурой [JobPostingsItemWrite](../job-postings-crud/openapi.yaml#/components/schemas/JobPostingsItemWrite);
    2. Если объект пустой и при ошибках десериализации:
-      1. фиксирует в БД аварийное завершения джоба п.🚧;
+      1. фиксирует в БД аварийное завершения джоба п.6;
       2. Завершает обработку сообщения.
 3. Создает вакансию
    1. Запрос `POST /job-postings/{jobPostingUuid}` к сервису `job-postings-crud`:
       1. `{jobPostingUuid}` = `{MessagePayload}.entityUuid`;
-      2. в тело запроса передает `{jobPostingItem}`
-4. Запускает оценку вакансии
+      2. в тело запроса передает `{jobPostingItem}`.
+4. Если от `job-postings-crud` был получен HTTP 200, запускает асинхронную оценку вакансии:
    1. Запрос `POST /evaluate/async/{jobPostingUuid}` к сервису `job-postings-evaluator`:
       1. `{jobPostingUuid}` = `{MessagePayload}.entityUuid`;
       2. заголовок `X-Joposcragent-correlationId` = `{MessagePayload}.jobUuid`.
-5. При любом не перехваченном исключении логирует ошибку и фиксирует в БД аварийное завершения джоба (п 1.1.):
-   1. `status` = `FAILED`;
+   2. Завершает обработку сообщения (запись в async_jobs остается со статусом `STARTED`, она завершится, когда придет `async-job-end`).
+5. Если от `job-postings-crud` получен ответ 409:
+   1. Пишет в лог WARN `"Job posting ${uid} has already been stored earlier"`;
+   2. Фиксирует в БД отмену асинхронного джоба:
+      1. `status` = `'CANCELED'`;
+      2. `result` = `"Evaluation skipped because ${uid} has already been stored earlier"`
+      3. `updated_at` = `finished_at` = `now()`;
+6. При любом не перехваченном исключении логирует ошибку и фиксирует в БД аварийное завершения джоба (п 1.1.):
+   1. `status` = `'FAILED'`;
    2. `result` = текст `"${message и stack_trace ошибки}"`;
    3. `updated_at` = `finished_at` = `now()`
 

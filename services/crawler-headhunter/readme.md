@@ -55,32 +55,26 @@ crawler-headhunter собирает данные с html-страниц сайт
       2. Получает дату публикации:
          1. Находит на странице текст `Вакансия опубликована \d+\s\w+\s\d+.*`;
          2. Этот текст использует в качестве `publicationDate`.
-      3. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
-         1. `POST http://job-postings-crud:8080/job-postings/{jobPostingUuid}`;
-         2. UUID v4 для `{jobPostingUuid}` crawler генерит сам;
-         3. `searchQueryUuid` = `{searchQuery}.searchQueryUuid`;
-         4. Если ответ `HTTP 409` (вакансия с таким `uuid` или `uid` уже есть в БД, в том числе из параллельного запуска краулера), crawler считает это **штатной** ситуацией: **не** увеличивает счётчик новых вакансий в итоге джоба, **не** помечает обработку карточки как сбой и переходит к следующей вакансии.
-      4. При возникновении любого иного исключения в ходе обработки карточки, логирует ошибку и продолжает цикл.
-6. Отправка событий progress и finish в в `celery-orchestrator`:
-   1. События отправляются только и исключительно, если заголовок `{correlationId}` был передан содержит не пустую строку.
-   2. После записи каждой вакансии отправляет `POST /events-queue/progress` в `celery-orchestrator`:
-      1. `correlationId` = `{correlationId}`;
-      2. `createdAt` = текущий момент времени;
-      3. `executionLog` = фрагмент лога, сгенерированного во время обработки вакансии (`vacancyLogCapture.takeAndClear()`);
-      4. `jobPostingUuid` = `{jobPostingUuid}`
-      5. `status` - если не было исключений в ходе обработки вакансии, то `"SUCCEEDED"`, иначе `"FAILED"`
-   3. После прохода каждой страницы, если их больше одной, отправляет `POST /events-queue/progress`:
-      1. `correlationId` = `{correlationId}`;
-      2. `createdAt` = текущий момент времени;
-      3. `executionLog` = `"Обработана страница ${текущий номер} из ${всего страниц}"`
-   4. После завершения всей обработки отправляет `POST /events-queue/finish`:
-      1. `correlationId` = `{correlationId}`;
-      2. `createdAt` = текущий момент времени;
-      3. `status` - если не было исключений в ходе обработки, то `"SUCCEEDED"`, иначе `"FAILED"`;
-      4. Если обработано успешно, то `result` = `"Обработано страниц ${сколько обработано}, загружено ${количество} новых вакансий"`;
-      5. Если обработка прервана по исключению:
-         1. `result` = message или любой краткий текст ошибки
-         2. `executionLog` = полный текст исключения
+      3. Генерирует `{jobPostingUuid}` - новый UUID v4
+      4. Отправляет сообщение в топик `job-posting-create`:
+         1. `headers`:
+            1. `key` = `{jobPostingUuid}`;
+            2. `createdAt` = текущий момент времени
+         2. `payload`:
+            1. `jobUuid` = генерирует новый UUID v4
+            2. `parentJobUuid` = `{correlationId}`
+            3. `entityUuid` = `{jobPostingUuid}`
+            4. `jsonData` - объект со структурой [JobPostingsItemWrite](../job-postings-crud/openapi.yaml#/components/schemas/JobPostingsItemWrite), используя значения `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
+      5. При возникновении любого иного исключения в ходе обработки карточки, логирует ошибку и продолжает цикл.
+6. После завершения всей обработки отправляет сообщение в топик `async-job-end`:
+   1. `headers`:
+      1. `key` = `{correlationId}`;
+      2. `createdAt` = текущий момент времени.
+   2. `payload`:
+      1. `jobUuid` = `{correlationId}`;
+      2. `entityUuid` = `null`;
+      3. `status` = `'SUCCEEDED'`;
+      4. `result` = `"Обработано страниц ${сколько обработано}, загружено ${количество} новых вакансий"`.
 
 ### Диаграмма последовательности
 
@@ -117,8 +111,7 @@ sequenceDiagram
             loop По всем новым вакансиям
                 Crawler->>+HH: Получить страницу вакансии
                 HH->>-Crawler: content, publicationDate
-                Crawler->>Postings: Сохранить вакансию (uid, title, company, url, content, publicationDate)
-                Note right of Postings: ошибка → skip-and-continue
+                Crawler->>Kafka: Сохранить вакансию (uid, title, company, url, content, publicationDate)
             end
         end
     end
