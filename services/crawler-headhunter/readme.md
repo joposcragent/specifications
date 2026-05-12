@@ -45,7 +45,7 @@ crawler-headhunter собирает данные с html-страниц сайт
    4. Строит `url` путем `BASE_URL` + `/vacancy/` + `uid`;
    5. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_COMPANY` получает название компании, это будет `company`;
    6. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
-      1. `GET http://job-postings-crud:8080/job-postings/search-query/non-existent`.
+      1. `POST http://job-postings-crud:8080/job-postings/search-query/non-existent` (тело — список `uid`, как в контракте [job-postings-crud]).
    7. Если `{searchQuery}.lazy` равен `true` и новых `uid` нет — прерывает цикл по страницам; если `{searchQuery}.lazy` равен `false` (в том числе по умолчанию при отсутствии поля в теле), цикл по страницам из-за отсутствия новых `uid` не прерывается;
    8. Для каждой новой вакансии:
       1. Получает текст вакансии в `content`:
@@ -58,8 +58,9 @@ crawler-headhunter собирает данные с html-страниц сайт
       3. Сохраняет вакансию через `job-postings-crud`: `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
          1. `POST http://job-postings-crud:8080/job-postings/{jobPostingUuid}`;
          2. UUID v4 для `{jobPostingUuid}` crawler генерит сам;
-         3. `searchQueryUuid` = `{searchQuery}.searchQueryUuid`
-      4. При возникновении любого исключения, логирует ошибку и продолжает цикл.
+         3. `searchQueryUuid` = `{searchQuery}.searchQueryUuid`;
+         4. Если ответ `HTTP 409` (вакансия с таким `uuid` или `uid` уже есть в БД, в том числе из параллельного запуска краулера), crawler считает это **штатной** ситуацией: **не** увеличивает счётчик новых вакансий в итоге джоба, **не** помечает обработку карточки как сбой и переходит к следующей вакансии.
+      4. При возникновении любого иного исключения в ходе обработки карточки, логирует ошибку и продолжает цикл.
 6. Отправка событий progress и finish в в `celery-orchestrator`:
    1. События отправляются только и исключительно, если заголовок `{correlationId}` был передан содержит не пустую строку.
    2. После записи каждой вакансии отправляет `POST /events-queue/progress` в `celery-orchestrator`:
