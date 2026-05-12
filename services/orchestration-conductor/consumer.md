@@ -100,9 +100,9 @@
       2. `parent_uuid` = `{MessagePayload}.parentJobUuid`
       3. `name` = `'collection-query'`
       4. `status` = `'STARTED'`
-   2. Добавляет (заменяет при совпадении) связь джоба с запросом в таблицу `joposcragent.orchestration.async_jobs_to_search_queries`:
+   2. Добавляет (заменяет при совпадении) связь джоба с запросом в таблицу `joposcragent.orchestration.async_jobs_to_job_postings`:
       1. `async_job_uuid` = `{MessagePayload}.jobUuid`
-      2. `search_query_uuid` = `{MessagePayload}.entityUuid`
+      2. `job_postings_uuid` = `{MessagePayload}.entityUuid`
 2. Десериализует и валидирует `{MessagePayload}.jsonData`, назовем значение `{jobPostingItem}`:
    1. Ожидает, что в jsonData лежит объект со структурой [JobPostingsItemWrite](../job-postings-crud/openapi.yaml#/components/schemas/JobPostingsItemWrite);
    2. Если объект пустой и при ошибках десериализации:
@@ -144,7 +144,7 @@
    1. `status` = `{MessagePayload}.status`
    2. `result` = `{MessagePayload}.result`
    3. `finished_at` = `updated_at` = текущий момент времени.
-3. Если `{MessagePayload}.parentJobUuid` не null:
+3. Если `{asyncJob}.parent_uuid` не null:
    1. Ищет в БД незавершенных сиблингов - записи в `joposcragent.orchestration.async_jobs`, у которых:
       1. `parent_uuid` = `{MessagePayload}.parentJobUuid`
       2. `status` = `'STARTED'`

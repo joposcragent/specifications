@@ -12,6 +12,9 @@ components:
           $ref:  '#/components/schemas/MessageHeaders'
         payload:
           $ref:  '#/components/schemas/MessagePayload'
+      required:
+        - headers
+        - payload
     MessageHeaders:
       type: object
       properties:
