@@ -1,5 +1,7 @@
 # REST API orchestration-conductor
 
+<!-- markdownlint-disable MD013 -->
+
 ## Отправка сообщения в очередь
 
 `POST /topic/{messageType}`
@@ -15,6 +17,10 @@
    1. При ошибках возвращает HTTP 400
 2. Отправляет сообщение `{commonMessage}` в топик `{messageType}`
 3. Возвращает HTTP 202 без тела
+
+Примечание: значение `async-job-end` для `{messageType}` не поддерживается;
+завершение джоба отправляют через `POST /topic/async-job-end`
+(см. следующий раздел).
 
 ## Отправка сообщения async-job-end в очередь
 
@@ -91,15 +97,14 @@
    2. Из `joposcragent.orchestration.async_jobs_to_search_queries` записи по `search_query_uuid` = `{entityUuid}`.
 2. Выбирает из `joposcragent.orchestration.async_jobs`:
    1. все записи, входящие в `{async_job_uuid}`;
-   2. а так же соответствующие отборам:
-      1. `parent_uuid` = `{parentJobUuid}`;
-      2. `status` = `{status}`;
-      3. `started_at`<=`{startedBefore}`;
+   2. применяет отборы:
+      1. `status` = `{status}`;
+      2. `started_at`<=`{startedBefore}`;
    3. применяет limit и offset на основании `{size}` и `{page}`.
 3. Из полученных записей формирует и возвращает объект `AsyncJobList`.
 4. Если не нашлось ни одной записи, то возвращает `AsyncJobList` с пустым массивом внутри, с HTTP 200.
 
-## Получение всей иерархию джобов, начинающейся на {parentJobUuid}
+## Получение всей иерархии джобов, начинающейся на {parentJobUuid}
 
 `GET /async-jobs/hierarchy/{parentJobUuid}`
 
@@ -138,4 +143,4 @@
    1. подчиненные по `parent_uuid` всем строкам из `{root_records}` прямо или косвенно;
    2. применяет `limit` и `offset`, если переданы `{size}` и `{page}`.
 4. Из получившегося массива строит дерево `AsyncJobHierarchyRelatedList` и возвращает его с кодом 200.
-5. Если не нашлось ни оной строки, все равно возвращает `AsyncJobHierarchyRelatedList` с кодом 200 и пустым `list`
+5. Если не нашлось ни одной строки, все равно возвращает `AsyncJobHierarchyRelatedList` с кодом 200 и пустым `list`

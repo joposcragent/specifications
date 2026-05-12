@@ -10,7 +10,9 @@ tags:
 paths: 
   /topic/{messageType}:
     post:
-      description: Отправка сообщения в очередь
+      description: |
+        Отправка сообщения в очередь. Топик `async-job-end` не поддерживается этим путём:
+        для него используйте `POST /topic/async-job-end` и схему из `async-job-end.yaml`.
       tags:
         - TopicsController
       parameters: 
@@ -22,7 +24,6 @@ paths:
               - collection-batch
               - collection-query
               - job-posting-create
-              - async-job-end
           required: true
       requestBody: 
         content: 
@@ -71,7 +72,7 @@ paths:
         '404':
           description: Не найден джоб с таким uuid
         '400':
-          description: Не корректный запрос
+          description: Некорректный запрос
         '500':
           $ref: '#/components/responses/UncaughtException'
   /async-jobs/list:
@@ -141,13 +142,13 @@ paths:
               schema: 
                 $ref: '#/components/schemas/AsyncJobList'
         '400':
-          description: Не корректный запрос
+          description: Некорректный запрос
         '500':
           $ref: '#/components/responses/UncaughtException'
   
   /async-jobs/hierarchy/{parentJobUuid}:
     get:
-      description: Поулчение всей иерархию джобов, начинающейся на {parentJobUuid}
+      description: Получение всей иерархии джобов, начинающейся на {parentJobUuid}
       tags: 
         - AsyncJobsController
       parameters: 
@@ -170,7 +171,7 @@ paths:
         '404':
           description: Не найден джоб с таким parentJobUuid
         '400':
-          description: Не корректный запрос
+          description: Некорректный запрос
         '500':
           $ref: '#/components/responses/UncaughtException'
 
@@ -194,9 +195,9 @@ paths:
           content:
             application/json: 
               schema: 
-                $ref: '#/components/schemas/AsyncJobHierarchy'
+                $ref: '#/components/schemas/AsyncJobHierarchyRelatedList'
         '400':
-          description: Не корректный запрос
+          description: Некорректный запрос
         '500':
           $ref: '#/components/responses/UncaughtException'
 
@@ -269,87 +270,17 @@ components:
         - FAILED
         - CANCELED
     AsyncJobEndMessage:
-      type: object
-      properties:
-        headers:
-          $ref:  '#/components/schemas/MessageHeaders'
-        payload:
-          $ref:  '#/components/schemas/AsyncJobEndMessagePayload'
-      required: 
-        - headers
-        - payload
+      $ref: '../../messaging/async-job-end.yaml#/components/schemas/Message'
     CommonMessage:
       type: object
       properties:
         headers:
-          $ref:  '#/components/schemas/MessageHeaders'
+          $ref: '../../messaging/common-orchestration-message.yaml#/components/schemas/MessageHeaders'
         payload:
-          $ref:  '#/components/schemas/MessagePayload'
+          $ref: '../../messaging/common-orchestration-message.yaml#/components/schemas/MessagePayload'
       required: 
         - headers
         - payload
-    MessageHeaders:
-      type: object
-      properties:
-        key:
-          type: string
-          description: Ключ идемпотентности сообщения
-        createdAt:
-          type: string
-          format: date-time
-          description: Дата, когда сообщение было помещено в очередь
-      additionalProperties: true
-      required: 
-        - key
-        - createdAt
-    MessagePayload:
-      type: object
-      properties:
-        jobUuid:
-          type: string
-          format: uuid
-          description: UUID асинхронного джоба
-        entityUuid:
-          type: string
-          format: uuid
-          description: UUID вакаснии или поискового запроса
-        status:
-          type: string
-          enum:
-            - SUCCEEDED
-            - FAILED
-            - CANCELED
-        result:
-          type: object
-          additionalProperties: true
-          description: Дополнительный контекст, произвольный JSON-объект; консьюмер сам знает, как это парсить
-      required:
-        - jobUuid
-        - status
-    AsyncJobEndMessagePayload:
-      type: object
-      properties:
-        jobUuid:
-          type: string
-          format: uuid
-          description: UUID асинхронного джоба
-        entityUuid:
-          type: string
-          format: uuid
-          description: UUID вакаснии или поискового запроса
-        status:
-          type: string
-          enum:
-            - SUCCEEDED
-            - FAILED
-            - CANCELED
-        result:
-          type: object
-          additionalProperties: true
-          description: Дополнительный контекст, произвольный JSON-объект; консьюмер сам знает, как это парсить
-      required:
-        - jobUuid
-        - status
   parameters: 
     Size:
       name: size
