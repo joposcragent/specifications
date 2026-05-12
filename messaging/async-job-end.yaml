@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: Структура сообщений топика `async-job-end`
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        headers:
+          $ref:  '#/components/schemas/MessageHeaders'
+        payload:
+          $ref:  '#/components/schemas/MessagePayload'
+    MessageHeaders:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Ключ идемпотентности сообщения
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата, когда сообщение было помещено в очередь
+      additionalProperties: true
+      required: 
+        - key
+        - createdAt
+    MessagePayload:
+      type: object
+      properties:
+        jobUuid:
+          type: string
+          format: uuid
+          description: UUID асинхронного джоба
+        entityUuid:
+          type: string
+          format: uuid
+          description: UUID вакаснии или поискового запроса
+        status:
+          type: string
+          enum:
+            - SUCCEEDED
+            - FAILED
+            - CANCELED
+        result:
+          type: object
+          additionalProperties: true
+          description: Дополнительный контекст, произвольный JSON-объект; консьюмер сам знает, как это парсить
+      required:
+        - jobUuid
+        - status

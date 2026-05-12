@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Структура сообщений, обрабатываемых оркестратором
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        headers:
+          $ref:  '#/components/schemas/MessageHeaders'
+        payload:
+          $ref:  '#/components/schemas/MessagePayload'
+    MessageHeaders:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Ключ идемпотентности сообщения
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата, когда сообщение было помещено в очередь
+      additionalProperties: true
+      required: 
+        - key
+        - createdAt
+    MessagePayload:
+      type: object
+      properties:
+        jobUuid:
+          type: string
+          format: uuid
+          description: UUID асинхронного джоба
+        parentJobUuid:
+          type: string
+          format: uuid
+          description: UUID родительского асинхронного джоба
+        entityUuid:
+          type: string
+          format: uuid
+          description: UUID вакаснии или поискового запроса
+        jsonData:
+          type: object
+          additionalProperties: true
+          description: Дополнительный контекст сообщения, произвольный JSON-объект; консьюмер сам знает, как это парсить
+      required:
+        - jobUuid

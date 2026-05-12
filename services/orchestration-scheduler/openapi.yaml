@@ -1,0 +1,118 @@
+openapi: 3.1.0
+info:
+  title: Настройки шедулера orchestration-scheduler
+  description: 
+  version: 1.0.0
+servers:
+  - url: http://orchestration-scheduler:8080/
+  - url: http://localhost:8083/
+
+paths:
+  /settings:
+    get:
+      description: Чтение настроек шедулера
+      responses: 
+        '200':
+          description: Настройки шедулера
+          content: 
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/SchedulerSettings'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /settings/cron-expression:
+    put:
+      description: Обновление расписания запуска
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/UpdateCronExpression'
+      responses: 
+        '200':
+          description: Расписание обновлено
+        '400':
+          $ref: '#/components/responses/IncorrectRequest'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+  /settings/next-run:
+    put:
+      description: Принудительная установка даты следующего запуска
+      requestBody: 
+        content: 
+          application/json: 
+            schema: 
+              $ref: '#/components/schemas/UpdateNextRun'
+      responses: 
+        '200':
+          description: Дата следующего запуска обновлена
+        '400':
+          $ref: '#/components/responses/IncorrectRequest'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+components:
+  schemas:
+    UpdateNextRun:
+      type: object
+      properties: 
+        value:
+          type: string
+          format: date-time
+      required: 
+        - value
+    UpdateCronExpression:
+      type: object
+      properties: 
+        value:
+          type: string
+          example: '0 * * * *'
+      required: 
+        - value
+    SchedulerSettings:
+      type: object
+      properties: 
+        nextRun:
+          type: string
+          format: date-time
+        cronExpression:
+          type: string
+          example: '0 * * * *'
+      required: 
+        - nextRun
+        - cronExpression
+    UuidsList:
+      description: Список UUID (строки в формате UUID)
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+      required:
+        - list
+  parameters:
+    RequiredEntityUuid:
+      name: jobPostingUuid
+      in: path
+      description: Внутренний UUID вакансии
+      schema:
+        type: string
+        format: uuid
+      required: true
+  responses:
+    IncorrectRequest:
+      description: Запрос не корректный
+      content: 
+        text/plain: 
+          schema: 
+            type: string
+          example: "Не зада обязательный параметр paramName"
+    UncaughtException:
+      description: Необработанное исключение
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "org.jooq.exception.DataAccessException: connection refused"
