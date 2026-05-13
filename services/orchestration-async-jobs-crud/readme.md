@@ -1,5 +1,11 @@
 # REST API orchestration-async-jobs-crud
 
+Сервис ведёт учёт асинхронных джобов в PostgreSQL (`joposcragent`, схема `orchestration`). Помимо REST-ручек ниже, он **подписан на Kafka** и по сообщениям begin/result создаёт строки джобов, связи с сущностями и завершающие статусы.
+
+## Kafka
+
+Потребители, фильтр по `type`, таблицы и согласованность с REST описаны в [спецификации по Kafka][kafka-async].
+
 ## Создать новый джоб
 
 `POST /async-jobs/{jobUuid}`
@@ -196,3 +202,7 @@
    2. применяет `limit` и `offset`, если переданы `{size}` и `{page}`.
 4. Из получившегося массива строит дерево `AsyncJobHierarchyRelatedList` и возвращает его с кодом 200.
 5. Если не нашлось ни одной строки, всё равно возвращает `AsyncJobHierarchyRelatedList` с кодом 200 и пустым `list`.
+
+<!-- LINKS -->
+
+[kafka-async]: ./async.md
