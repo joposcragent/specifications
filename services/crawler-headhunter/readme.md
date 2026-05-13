@@ -2,9 +2,11 @@
 
 Сервис сбора новых вакансий с сайта hh.ru.
 
-Представляет из себя backend-приложение на node.js, запускающее playwrite, с его помощью осуществляющее сбор данных с UI сайта hh.ru и запись собранных данных в БД.
+Представляет собой backend-приложение на Node.js, запускающее **Playwright**, с его помощью осуществляющее сбор данных с UI сайта hh.ru и запись собранных данных в БД.
 
 crawler-headhunter собирает данные с html-страниц сайта hh.ru и сохраняет данные в БД при помощи сервиса [job-postings-crud].
+
+Запуск сбора возможен по HTTP (ниже) и из Kafka; поведение для сообщений `async-job.collection-query-begin` описано в [Kafka][async-kafka].
 
 ## Конфигурация CSS-селекторов
 
@@ -18,14 +20,18 @@ crawler-headhunter собирает данные с html-страниц сайт
 
 | Входной параметр                        | Источник                                         | Описание                                       |
 |-----------------------------------------|--------------------------------------------------|------------------------------------------------|
-| 📌 `{searchQuery}`                      | Тело запроса                                     | Настройки поиска и сбора данных с hh.ru        |
-| `{correlationId}`                       | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator |
-| 📌 `SELECTOR_VACANCY_LIST_PAGES_LINKS`  | env-переменная                                   | CSS-селектор                                   |
-| 📌 `BASE_URL`                           | env-переменная                                   | <http://hh.ru>                                 |
-| 📌 `JOB_POSTING_LIST_CARDS`             | env-переменная                                   | CSS-селектор                                   |
-| 📌 `SELECTOR_VACANCY_LIST_CARD_TITLE`   | env-переменная                                   | CSS-селектор                                   |
-| 📌 `SELECTOR_VACANCY_LIST_CARD_COMPANY` | env-переменная                                   | CSS-селектор                                   |
-| 📌 `SELECTOR_VACANCY_CARD_CONTENT`      | env-переменная                                   | CSS-селектор                                   |
+| `{searchQuery}`                         | Тело запроса                                     | Настройки поиска и сбора данных с hh.ru        |
+| `{correlationId}`                       | `X-Joposcragent-correlationId`                   | UUID корня джоба; корреляция — см. абзац ниже  |
+| `SELECTOR_VACANCY_LIST_PAGES_LINKS`     | env-переменная                                   | CSS-селектор                                   |
+| `BASE_URL`                              | env-переменная                                   | <http://hh.ru>                                 |
+| `JOB_POSTING_LIST_CARDS`                | env-переменная                                   | CSS-селектор                                   |
+| `SELECTOR_VACANCY_LIST_CARD_TITLE`      | env-переменная                                   | CSS-селектор                                   |
+| `SELECTOR_VACANCY_LIST_CARD_COMPANY`    | env-переменная                                   | CSS-селектор                                   |
+| `SELECTOR_VACANCY_CARD_CONTENT`         | env-переменная                                   | CSS-селектор                                   |
+
+Обязательные поля JSON-тела и заголовка — в [OpenAPI][openapi-crawler].
+
+Тот же смысл, что у `jobUuid` в сообщении `async-job.collection-query-begin` (см. [Kafka][async-kafka]); если заголовок задан, после успешного сбора в Kafka уходит итоговое сообщение `async-job.collection-query-result`.
 
 Алгоритм работы:
 
@@ -54,20 +60,22 @@ crawler-headhunter собирает данные с html-страниц сайт
          3. очищает от html-тэгов и заменяет неразрывные пробелы (`&nbsp;`) на обычные.
       2. Получает дату публикации:
          1. Находит на странице текст `Вакансия опубликована \d+\s\w+\s\d+.*`;
-         2. Этот текст использует в качестве `publicationDate`.
-      3. Генерирует `{jobPostingUuid}` - новый UUID v4
+         2. Парсит этот текст в значение `publicationDate` в формате `date-time` (RFC 3339), как ожидает контракт сообщения.
+      3. Генерирует `{jobPostingUuid}` и `{currentJobUuid}` — новые UUID v4.
       4. Отправляет сообщение [`async-job.job-posting-create-begin`]:
          1. Топик: `async-job.job-posting-create`
          2. `headers`:
-            1. `key` = `{correlationId}`;
+            1. `key` = `{currentJobUuid}`
             2. `createdAt` = текущий момент времени
             3. `type` = `async-job.job-posting-create-begin`
             4. `schemaVersion` = `1.0`
          3. `payload`:
-            1. `jobUuid` = `{correlationId}`
-            2. `entityUuid` = `{jobPostingUuid}`
-            3. `searchQueryUuid` = `{searchQuery}.searchQueryUuid`
-            4. `uid`, `title`, `url`, `company`, `content`, `publicationDate` - значения, собранные в шагах 5.1 ... 5.8.3
+            1. `jobUuid` = `{currentJobUuid}`;
+            2. `parentJobUuid` = `{correlationId}`;
+            3. `entityUuid` = `{jobPostingUuid}`;
+            4. `jobPostingUuid` = `{jobPostingUuid}`;
+            5. `searchQueryUuid` = `{searchQuery}.searchQueryUuid`;
+            6. `uid`, `title`, `url`, `company`, `content`, `publicationDate` — значения из шагов 5.2–5.5 и 5.8.1–5.8.2
       5. При возникновении любого иного исключения в ходе обработки карточки, логирует ошибку и продолжает цикл.
 6. После завершения всей обработки, если заполнен `{correlationId}`, отправляет success-сообщение [`async-job.collection-query-result`]:
    1. Топик: `async-job.collection-query`
@@ -80,7 +88,7 @@ crawler-headhunter собирает данные с html-страниц сайт
       1. `jobUuid` = `{correlationId}`;
       2. `pagesProcessed` = `${сколько обработано}`
       3. `newVacanciesSaved` = `${количество}`
-      4. `status` = `'SUCCEEDED'`;
+      4. `status` = `SUCCEEDED`;
       5. `result` = `"Обработано страниц ${сколько обработано}, загружено ${количество} новых вакансий"`.
 
 ### Диаграмма последовательности
@@ -127,5 +135,7 @@ sequenceDiagram
 
 <!-- LINKS -->
 [job-postings-crud]: ../job-postings-crud/index.md
+[async-kafka]: ./async.md
+[openapi-crawler]: ./openapi.yaml
 [`async-job.collection-query-result`]: ../../messaging/async-job.collection-query/async-job.collection-query-result.yaml
 [`async-job.job-posting-create-begin`]: ../../messaging/async-job.job-posting-create/async-job.job-posting-create-begin.yaml

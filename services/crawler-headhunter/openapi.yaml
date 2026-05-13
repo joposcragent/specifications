@@ -7,7 +7,7 @@ servers:
   - url: http://localhost:8083/
 tags:
   - name: crawler
-    description: Контроллер запусука заданий сбора данных с hh.ru
+    description: Контроллер запуска заданий сбора данных с hh.ru
 paths:
   /crawler/start:
     post:
@@ -65,7 +65,7 @@ components:
                   at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218) ~[spring-core-5.3.1.jar:5.3.1]
   parameters:
     CorrelationId:
-      description: correlationId асинхронной задачи; если задан, то некоторые эндпоинты должны отправлять события в очередь брокера Celery Orchestrator
+      description: UUID родительского асинхронного джоба (корреляция); если задан, после сбора отправляется итоговое сообщение в Kafka (см. спецификацию сервиса)
       name: X-Joposcragent-correlationId
       in: header
       schema:
