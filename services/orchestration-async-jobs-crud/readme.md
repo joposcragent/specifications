@@ -18,7 +18,7 @@
 3. Создаёт новую строку в `joposcragent.orchestration.async_jobs` с полями:
    1. `uuid` = `{jobUuid}`;
    2. `name` = `{createAsyncJobItem}.name`;
-   3. `parent_uuid` =  `{createAsyncJobItem}.parentUuid`;
+   3. `parent_uuid` = `{createAsyncJobItem}.parentUuid`;
    4. остальные дефолтные
 4. Возвращает HTTP 200 без тела.
 
@@ -59,10 +59,10 @@
 3. Если у найденной записи `status` не равен `STARTED`, возвращает HTTP 409 без изменений в БД.
 4. Записывает статус в `joposcragent.orchestration.async_jobs`:
    1. `status` = `{terminalStatus}`
-   2. `finished_at` = `updated_at`  = `now()`
+   2. `finished_at` = `updated_at` = `now()`
 5. Если у обновлённого джоба заполнен `parent_uuid` и строка-родитель в `joposcragent.orchestration.async_jobs` с `uuid` = этому `parent_uuid` имеет `status` = `STARTED`:
    1. Ищет в `joposcragent.orchestration.async_jobs` все строки с тем же `parent_uuid`, что и у обновлённого джоба, и со `status` = `STARTED` (сам обновлённый джоб после шага 4 уже не учитывается).
-   2. Если таких строк нет, устанавливает родителю (`uuid` = `parent_uuid`) `status` = `SUCCEEDED` и `finished_at` = `updated_at`  = `now()`.
+   2. Если таких строк нет, устанавливает родителю (`uuid` = `parent_uuid`) `status` = `SUCCEEDED` и `finished_at` = `updated_at` = `now()`.
 6. Возвращает HTTP 200 без тела.
 
 ## Получение данных асинхронного джоба
@@ -75,9 +75,9 @@
 
 Алгоритм работы:
 
-1. Ищет в БД `joposcragent.orchestration.async_jobs` запись с `uuid` = `{jobUuid}`
-   1. Если не находит, возвращает HTTP 404
-2. Возвращает `AsyncJobItem`, заполненный данными найденной записи, с HTTP 200
+1. Ищет в БД `joposcragent.orchestration.async_jobs` запись с `uuid` = `{jobUuid}`.
+   1. Если не находит, возвращает HTTP 404.
+2. Возвращает `AsyncJobItem`, заполненный данными найденной записи, с HTTP 200.
 
 ## Добавить связи джоба
 
@@ -122,7 +122,7 @@
 1. Делает запрос в БД `joposcragent.orchestration.async_jobs` с отборами:
    1. `parent_uuid` = `{parentJobUuid}`;
    2. `status` = `{status}`;
-   3. `started_at`<=`{startedBefore}`;
+   3. `started_at` <= `{startedBefore}`;
    4. limit и offset на основании `{size}` и `{page}`.
 2. Все query-параметры опциональные, комбинируются по `AND`.
 3. Возвращает `AsyncJobList` с массивом найденных записей.
@@ -144,19 +144,19 @@
 
 Алгоритм работы:
 
-1. Выбирает массив `{async_job_uuid}` помощи UNION:
+1. Выбирает массив `{async_job_uuid}` с помощью UNION:
    1. Из `joposcragent.orchestration.async_jobs_to_job_postings` записи по `job_postings_uuid` = `{entityUuid}`;
    2. Из `joposcragent.orchestration.async_jobs_to_search_queries` записи по `search_query_uuid` = `{entityUuid}`.
 2. Выбирает из `joposcragent.orchestration.async_jobs`:
    1. все записи, входящие в `{async_job_uuid}`;
    2. применяет отборы:
       1. `status` = `{status}`;
-      2. `started_at`<=`{startedBefore}`;
+      2. `started_at` <= `{startedBefore}`;
    3. применяет limit и offset на основании `{size}` и `{page}`.
 3. Из полученных записей формирует и возвращает объект `AsyncJobList`.
 4. Если не нашлось ни одной записи, то возвращает `AsyncJobList` с пустым массивом внутри, с HTTP 200.
 
-## Получение всей иерархии джобов, начинающейся на {parentJobUuid}
+## Получение всей иерархии джобов с корнем {parentJobUuid}
 
 `GET /async-jobs/hierarchy/{parentJobUuid}`
 
@@ -168,12 +168,12 @@
 
 Алгоритм работы:
 
-1. Если в `joposcragent.orchestration.async_jobs` нет строки с `uuid` = `{parentJobUuid}`, возвращает HTTP 404
+1. Если в `joposcragent.orchestration.async_jobs` нет строки с `uuid` = `{parentJobUuid}`, возвращает HTTP 404.
 2. Выбирает из `joposcragent.orchestration.async_jobs`:
-   1. рекурсивно все строки, подчиненные `{parentJobUuid}` по полю `parent_uuid`;
+   1. рекурсивно все строки, подчинённые `{parentJobUuid}` по полю `parent_uuid`;
    2. применяет `limit` и `offset`, если переданы `{size}` и `{page}`.
 3. Из получившихся строк строит дерево `AsyncJobHierarchy` и возвращает его с кодом 200.
-4. Если ничего, кроме `{parentJobUuid}`, не найдено, возвращает 200 и `AsyncJobHierarchy` с заполненным `root`, но пустым массивом `children`;
+4. Если ничего, кроме `{parentJobUuid}`, не найдено, возвращает 200 и `AsyncJobHierarchy` с заполненным `root`, но пустым массивом `children`.
 
 ## Получение всех джобов, связанных с {entityUuid}
 
@@ -187,12 +187,12 @@
 
 Алгоритм работы:
 
-1. Выбирает в массив `{all_related_uuid}` помощи UNION поле `async_job_uuid`:
+1. Выбирает в массив `{all_related_uuid}` с помощью UNION поле `async_job_uuid`:
    1. Из `joposcragent.orchestration.async_jobs_to_job_postings` записи по `job_postings_uuid` = `{entityUuid}`;
    2. Из `joposcragent.orchestration.async_jobs_to_search_queries` записи по `search_query_uuid` = `{entityUuid}`.
 2. Выбирает в `{root_records}` из `joposcragent.orchestration.async_jobs` все строки, у которых `uuid` входит в список `{all_related_uuid}`;
 3. Рекурсивно отбирает из `joposcragent.orchestration.async_jobs` все строки:
-   1. подчиненные по `parent_uuid` всем строкам из `{root_records}` прямо или косвенно;
+   1. подчинённые по `parent_uuid` всем строкам из `{root_records}` прямо или косвенно;
    2. применяет `limit` и `offset`, если переданы `{size}` и `{page}`.
 4. Из получившегося массива строит дерево `AsyncJobHierarchyRelatedList` и возвращает его с кодом 200.
-5. Если не нашлось ни одной строки, все равно возвращает `AsyncJobHierarchyRelatedList` с кодом 200 и пустым `list`
+5. Если не нашлось ни одной строки, всё равно возвращает `AsyncJobHierarchyRelatedList` с кодом 200 и пустым `list`.
