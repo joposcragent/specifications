@@ -32,6 +32,10 @@ components:
   MessagePayload:
     type: object
     properties:
+      jobPostingUuid:
+        type: string
+        format: uuid
+        description: UUID вакансии, которую нужно создать
       searchQueryUuid:
           type: string
           format: uuid
