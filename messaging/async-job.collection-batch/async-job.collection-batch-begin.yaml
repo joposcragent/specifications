@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Структура сообщения `async-job.collection-batch-begin`
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        headers:
+          allOf:
+            - $ref: '../common-orchestration-message.yaml#/components/schemas/MessageHeaders'
+            - $ref: '#/components/schemas/MessageHeaders'
+        payload:
+          $ref: '../common-orchestration-message.yaml#/components/schemas/MessagePayload'
+      required:
+        - headers
+        - payload
+  MessageHeaders:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - async-job.collection-batch-begin
+        description: Тип сообщения
+      required:
+        - type
+      

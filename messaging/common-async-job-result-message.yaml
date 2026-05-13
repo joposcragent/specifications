@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Структура сообщений топика `async-job-end`
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    MessagePayload:
+      type: object
+      properties:
+        jobUuid:
+          type: string
+          format: uuid
+          description: UUID асинхронного джоба
+        status:
+          type: string
+          enum:
+            - SUCCEEDED
+            - FAILED
+            - CANCELED
+        result:
+          type: object
+          additionalProperties: true
+          description: Дополнительный контекст, произвольный JSON-объект; консьюмер сам знает, как это парсить
+      required:
+        - jobUuid
+        - status

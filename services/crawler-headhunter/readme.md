@@ -46,7 +46,7 @@ crawler-headhunter собирает данные с html-страниц сайт
    5. Из карточки селектором `SELECTOR_VACANCY_LIST_CARD_COMPANY` получает название компании, это будет `company`;
    6. Собирает найденные `uid` в массив и через `job-postings-crud` получает только новые `uid`:
       1. `POST http://job-postings-crud:8080/job-postings/search-query/non-existent` (тело — список `uid`, как в контракте [job-postings-crud]).
-   7. Если `{searchQuery}.lazy` равен `true` и новых `uid` нет — прерывает цикл по страницам; если `{searchQuery}.lazy` равен `false` (в том числе по умолчанию при отсутствии поля в теле), цикл по страницам из-за отсутствия новых `uid` не прерывается;
+   7. Если `{searchQuery}.lazy` равен `true` и новых `uid` нет — прерывает цикл по страницам;
    8. Для каждой новой вакансии:
       1. Получает текст вакансии в `content`:
          1. Селектором `SELECTOR_VACANCY_CARD_CONTENT` находит элемент;
@@ -56,25 +56,32 @@ crawler-headhunter собирает данные с html-страниц сайт
          1. Находит на странице текст `Вакансия опубликована \d+\s\w+\s\d+.*`;
          2. Этот текст использует в качестве `publicationDate`.
       3. Генерирует `{jobPostingUuid}` - новый UUID v4
-      4. Отправляет сообщение в топик `job-posting-create`:
-         1. `headers`:
-            1. `key` = `{jobPostingUuid}`;
+      4. Отправляет сообщение [`async-job.job-posting-create-begin`]:
+         1. Топик: `async-job.job-posting-create`
+         2. `headers`:
+            1. `key` = `{correlationId}`;
             2. `createdAt` = текущий момент времени
-         2. `payload`:
-            1. `jobUuid` = генерирует новый UUID v4
-            2. `parentJobUuid` = `{correlationId}`
-            3. `entityUuid` = `{jobPostingUuid}`
-            4. `jsonData` - объект со структурой [JobPostingsItemWrite](../job-postings-crud/openapi.yaml#/components/schemas/JobPostingsItemWrite), используя значения `uid`, `title`, `company`, `url`, `content`, `publicationDate`:
+            3. `type` = `async-job.job-posting-create-begin`
+            4. `schemaVersion` = `1.0`
+         3. `payload`:
+            1. `jobUuid` = `{correlationId}`
+            2. `entityUuid` = `{jobPostingUuid}`
+            3. `searchQueryUuid` = `{searchQuery}.searchQueryUuid`
+            4. `uid`, `title`, `url`, `company`, `content`, `publicationDate` - значения, собранные в шагах 5.1 ... 5.8.3
       5. При возникновении любого иного исключения в ходе обработки карточки, логирует ошибку и продолжает цикл.
-6. После завершения всей обработки отправляет сообщение в топик `async-job-end`:
-   1. `headers`:
+6. После завершения всей обработки, если заполнен `{correlationId}`, отправляет success-сообщение [`async-job.collection-query-result`]:
+   1. Топик: `async-job.collection-query`
+   2. `headers`:
       1. `key` = `{correlationId}`;
       2. `createdAt` = текущий момент времени.
-   2. `payload`:
+      3. `type` = `async-job.collection-query-result`
+      4. `schemaVersion` = `1.0`
+   3. `payload`:
       1. `jobUuid` = `{correlationId}`;
-      2. `entityUuid` = `null`;
-      3. `status` = `'SUCCEEDED'`;
-      4. `result` = `"Обработано страниц ${сколько обработано}, загружено ${количество} новых вакансий"`.
+      2. `pagesProcessed` = `${сколько обработано}`
+      3. `newVacanciesSaved` = `${количество}`
+      4. `status` = `'SUCCEEDED'`;
+      5. `result` = `"Обработано страниц ${сколько обработано}, загружено ${количество} новых вакансий"`.
 
 ### Диаграмма последовательности
 
@@ -111,10 +118,14 @@ sequenceDiagram
             loop По всем новым вакансиям
                 Crawler->>+HH: Получить страницу вакансии
                 HH->>-Crawler: content, publicationDate
-                Crawler->>Kafka: Сохранить вакансию (uid, title, company, url, content, publicationDate)
+                Crawler->>Kafka: Сообщение `async-job.job-posting-create-begin` с данными вакансии
             end
         end
     end
+    Crawler->>Kafka: Сообщение `async-job.collection-query-result`
 ```
 
+<!-- LINKS -->
 [job-postings-crud]: ../job-postings-crud/index.md
+[`async-job.collection-query-result`]: ../../messaging/async-job.collection-query/async-job.collection-query-result.yaml
+[`async-job.job-posting-create-begin`]: ../../messaging/async-job.job-posting-create/async-job.job-posting-create-begin.yaml

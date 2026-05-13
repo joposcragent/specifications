@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: Структура сообщения `async-job.job-posting-create-begin`
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        headers:
+          allOf:
+            - $ref: '../common-orchestration-message.yaml#/components/schemas/MessageHeaders'
+            - $ref: '#/components/schemas/MessageHeaders'
+        payload:
+          allOf:
+            - $ref: '../common-orchestration-message.yaml#/components/schemas/MessagePayload'
+            - $ref: '#/components/schemas/MessagePayload'
+      required:
+        - headers
+        - payload
+  MessageHeaders:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - async-job.job-posting-create-begin
+        description: Тип сообщения
+      required:
+        - type
+  MessagePayload:
+    type: object
+    properties:
+      searchQueryUuid:
+          type: string
+          format: uuid
+          description: UUID поискового запроса, которым была найдена вакансия.
+      uid:
+        type: string
+        description: UID вакансии на hh.ru
+        example: "131927888"
+      title:
+        type: string
+        description: Название позиции
+        example: Технический директор
+      url:
+        type: string
+        example: https://hh.ru/vacancy/131962084
+      company:
+        type: string
+        example: ООО Криотрейд инжиниринг
+      content:
+        type: string
+        description: Текст вакансии
+      publicationDate:
+        type: string
+        format: date-time
+        description: Дата публикации вакансии (HH.ru)
+      required:
+        - searchQueryUuid
+        - uid
+        - title
+        - url
+        - company
+        - content
+        - publicationDate

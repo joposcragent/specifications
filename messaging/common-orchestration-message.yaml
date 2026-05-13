@@ -25,10 +25,15 @@ components:
           type: string
           format: date-time
           description: Дата, когда сообщение было помещено в очередь
+        schemaVersion:
+          type: string
+          pattern: '^v\d+\.\d+(\.\d+(-[a-z0-9]+)?)?$'
+          description: Версия структуры сообщения
       additionalProperties: true
       required: 
         - key
         - createdAt
+        - schemaVersion
     MessagePayload:
       type: object
       properties:
@@ -44,7 +49,7 @@ components:
           type: string
           format: uuid
           description: UUID вакаснии или поискового запроса
-        jsonData:
+        context:
           type: object
           additionalProperties: true
           description: Дополнительный контекст сообщения, произвольный JSON-объект; консьюмер сам знает, как это парсить
