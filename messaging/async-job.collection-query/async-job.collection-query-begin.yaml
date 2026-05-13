@@ -19,32 +19,32 @@ components:
       required:
         - headers
         - payload
-  MessageHeaders:
-    type: object
-    properties:
-      type:
-        type: string
-        enum:
-          - async-job.collection-query-begin
-        description: Тип сообщения
+    MessageHeaders:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - async-job.collection-query-begin
+          description: Тип сообщения
       required:
         - type
-  MessagePayload:
-    type: object
-    properties:
-      query:
-        type: string
-        description: Поисковый запрос
-      searchQueryUuid:
-        type: string
-        format: uuid
-        description: UUID строки в `settings.search_queries` (передаётся в job-postings-crud при сохранении вакансий).
-      lazy:
-        type: boolean
-        default: false
-        description: |
-          При `true` обход страниц прерывается, если на текущей странице нет новых `uid`;
-          при `false` (по умолчанию) цикл по страницам продолжается.
+    MessagePayload:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Поисковый запрос
+        searchQueryUuid:
+          type: string
+          format: uuid
+          description: UUID строки в `settings.search_queries` (передаётся в job-postings-crud при сохранении вакансий).
+        lazy:
+          type: boolean
+          default: false
+          description: |
+            При `true` обход страниц прерывается, если на текущей странице нет новых `uid`;
+            при `false` (по умолчанию) цикл по страницам продолжается.
       required:
         - searchQueryUuid
         - query

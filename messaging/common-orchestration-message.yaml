@@ -9,9 +9,9 @@ components:
       type: object
       properties:
         headers:
-          $ref:  '#/components/schemas/MessageHeaders'
+          $ref: '#/components/schemas/MessageHeaders'
         payload:
-          $ref:  '#/components/schemas/MessagePayload'
+          $ref: '#/components/schemas/MessagePayload'
       required:
         - headers
         - payload
@@ -30,7 +30,7 @@ components:
           pattern: '^v\d+\.\d+(\.\d+(-[a-z0-9]+)?)?$'
           description: Версия структуры сообщения
       additionalProperties: true
-      required: 
+      required:
         - key
         - createdAt
         - schemaVersion
@@ -48,7 +48,7 @@ components:
         entityUuid:
           type: string
           format: uuid
-          description: UUID вакаснии или поискового запроса
+          description: UUID вакансии или поискового запроса
         context:
           type: object
           additionalProperties: true

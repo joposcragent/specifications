@@ -19,20 +19,20 @@ components:
       required:
         - headers
         - payload
-  MessageHeaders:
-    type: object
-    properties:
-      type:
-        type: string
-        enum:
-          - async-job.job-posting-create-result
-        description: Тип сообщения
+    MessageHeaders:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - async-job.job-posting-create-result
+          description: Тип сообщения
       required:
         - type
-  MessagePayload:
-    type: object
-    properties:
-      jobPostingUuid:
-        type: string
-        format: uuid
-        description: UUID созданной вакансии
+    MessagePayload:
+      type: object
+      properties:
+        jobPostingUuid:
+          type: string
+          format: uuid
+          description: UUID созданной вакансии

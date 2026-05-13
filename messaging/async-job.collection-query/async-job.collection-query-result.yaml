@@ -19,25 +19,25 @@ components:
       required:
         - headers
         - payload
-  MessageHeaders:
-    type: object
-    properties:
-      type:
-        type: string
-        enum:
-          - async-job.collection-query-result
-        description: Тип сообщения
+    MessageHeaders:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - async-job.collection-query-result
+          description: Тип сообщения
       required:
         - type
-  MessagePayload:
-    type: object
-    properties:
-      pagesProcessed:
-        type: integer
-        description: Количество обработанных страниц
-      newVacanciesSaved:
-        type: integer
-        description: Количество новых вакансий
+    MessagePayload:
+      type: object
+      properties:
+        pagesProcessed:
+          type: integer
+          description: Количество обработанных страниц
+        newVacanciesSaved:
+          type: integer
+          description: Количество новых вакансий
       required:
         - pagesProcessed
         - newVacanciesSaved

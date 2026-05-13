@@ -19,30 +19,30 @@ components:
       required:
         - headers
         - payload
-  MessageHeaders:
-    type: object
-    properties:
-      type:
-        type: string
-        enum:
-          - async-job.job-posting-evaluate-result
-        description: Тип сообщения
+    MessageHeaders:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - async-job.job-posting-evaluate-result
+          description: Тип сообщения
       required:
         - type
-  MessagePayload:
-    type: object
-    properties:
-      jobPostingUuid:
-        type: string
-        format: uuid
-        description: UUID оцененной вакансии
-      evaluationStatus:
-        $ref: '../../services/job-postings-crud/openapi.yaml#/components/schemas/EvaluationStatus'
-      relevance:
-        type: number
-        format: double
-        description: Релевантность вакансии
-        example: 0.8040228486061096
+    MessagePayload:
+      type: object
+      properties:
+        jobPostingUuid:
+          type: string
+          format: uuid
+          description: UUID оцененной вакансии
+        evaluationStatus:
+          $ref: '../../services/job-postings-crud/openapi.yaml#/components/schemas/EvaluationStatus'
+        relevance:
+          type: number
+          format: double
+          description: Релевантность вакансии
+          example: 0.8040228486061096
       required:
         - jobPostingUuid
         - evaluationStatus

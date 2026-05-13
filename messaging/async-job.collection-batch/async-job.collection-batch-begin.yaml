@@ -17,14 +17,13 @@ components:
       required:
         - headers
         - payload
-  MessageHeaders:
-    type: object
-    properties:
-      type:
-        type: string
-        enum:
-          - async-job.collection-batch-begin
-        description: Тип сообщения
+    MessageHeaders:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - async-job.collection-batch-begin
+          description: Тип сообщения
       required:
         - type
-      

@@ -19,48 +19,48 @@ components:
       required:
         - headers
         - payload
-  MessageHeaders:
-    type: object
-    properties:
-      type:
-        type: string
-        enum:
-          - async-job.job-posting-create-begin
-        description: Тип сообщения
+    MessageHeaders:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - async-job.job-posting-create-begin
+          description: Тип сообщения
       required:
         - type
-  MessagePayload:
-    type: object
-    properties:
-      jobPostingUuid:
-        type: string
-        format: uuid
-        description: UUID вакансии, которую нужно создать
-      searchQueryUuid:
+    MessagePayload:
+      type: object
+      properties:
+        jobPostingUuid:
+          type: string
+          format: uuid
+          description: UUID вакансии, которую нужно создать
+        searchQueryUuid:
           type: string
           format: uuid
           description: UUID поискового запроса, которым была найдена вакансия.
-      uid:
-        type: string
-        description: UID вакансии на hh.ru
-        example: "131927888"
-      title:
-        type: string
-        description: Название позиции
-        example: Технический директор
-      url:
-        type: string
-        example: https://hh.ru/vacancy/131962084
-      company:
-        type: string
-        example: ООО Криотрейд инжиниринг
-      content:
-        type: string
-        description: Текст вакансии
-      publicationDate:
-        type: string
-        format: date-time
-        description: Дата публикации вакансии (HH.ru)
+        uid:
+          type: string
+          description: UID вакансии на hh.ru
+          example: "131927888"
+        title:
+          type: string
+          description: Название позиции
+          example: Технический директор
+        url:
+          type: string
+          example: https://hh.ru/vacancy/131962084
+        company:
+          type: string
+          example: ООО Криотрейд инжиниринг
+        content:
+          type: string
+          description: Текст вакансии
+        publicationDate:
+          type: string
+          format: date-time
+          description: Дата публикации вакансии (HH.ru)
       required:
         - searchQueryUuid
         - uid
