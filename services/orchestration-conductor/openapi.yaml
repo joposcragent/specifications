@@ -7,281 +7,74 @@ tags:
     description: Отправка сообщений в очереди
   - name: AsyncJobsController
     description: Работа с данными асинхронных джобов
-paths: 
-  /topic/{messageType}:
+paths:
+  /enqueue/collection-batch:
     post:
+      summary: Запустить collection-batch вручную
       description: |
-        Отправка сообщения в очередь. Топик `async-job-end` не поддерживается этим путём:
-        для него используйте `POST /topic/async-job-end` и схему из `async-job-end.yaml`.
-      tags:
-        - TopicsController
-      parameters: 
-        - name: messageType
-          in: path
-          schema: 
-            type: string
-            enum:
-              - collection-batch
-              - collection-query
-              - job-posting-create
-          required: true
-      requestBody: 
-        content: 
-          application/json: 
-            schema: 
-              $ref: '#/components/schemas/CommonMessage'
-      responses: 
-        '202':
-          description: accepted
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-  /topic/async-job-end:
-    post:
-      description: Отправка сообщения async-job-end в очередь
-      tags:
-        - TopicsController
-      requestBody: 
-        content: 
-          application/json: 
-            schema: 
-              $ref: '#/components/schemas/AsyncJobEndMessage'
-      responses: 
-        '202':
-          description: accepted
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-  /async-jobs/{jobUuid}:
-    get:
-      description: Получение данных асинхронного джоба
-      tags: 
-        - AsyncJobsController
-      parameters: 
-        - name: jobUuid
-          in: path
-          schema: 
-            type: string
-            format: uuid
-          required: true
-      responses: 
-        '200':
-          description: Данные асинхронного джоба
-          content: 
-            application/json: 
-              schema: 
-                $ref: '#/components/schemas/AsyncJobItem'
-        '404':
-          description: Не найден джоб с таким uuid
-        '400':
-          description: Некорректный запрос
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-  /async-jobs/list:
-    get:
-      description: Получение списка асинхронных джобов 
-      tags: 
-        - AsyncJobsController
-      parameters: 
-        - name: parentJobUuid
-          description: Только непосредственные потомки {parentJobUuid}
-          in: query
-          schema: 
-            type: string
-            format: uuid
-        - name: status
-          description: Только в статусе {status}
-          in: query
-          schema: 
-            $ref: '#/components/schemas/AsyncJobStatus'
-        - name: startedBefore
-          description: Только запущенные не позднее {startedBefore}
-          in: query
-          schema: 
-            type: string
-            format: date-time
-        - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Page'
-      responses: 
-        '200':
-          description: Ok
-          content: 
-            application/json: 
-              schema: 
-                $ref: '#/components/schemas/AsyncJobList'
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-  /async-jobs/list/related/{entityUuid}:
-    get:
-      description: Получение списка асинхронных джобов, связанных с {entityUuid}
-      tags: 
-        - AsyncJobsController
-      parameters: 
-        - name: entityUuid
-          in: path
-          required: true
-          schema: 
-            type: string
-            format: uuid
-        - name: status
-          description: Только в статусе {status}
-          in: query
-          schema: 
-            $ref: '#/components/schemas/AsyncJobStatus'
-        - name: startedBefore
-          description: Только запущенные не позднее {startedBefore}
-          in: query
-          schema: 
-            type: string
-            format: date-time
-        - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Page'
-      responses: 
-        '200':
-          description: Ok
-          content: 
-            application/json: 
-              schema: 
-                $ref: '#/components/schemas/AsyncJobList'
-        '400':
-          description: Некорректный запрос
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-  
-  /async-jobs/hierarchy/{parentJobUuid}:
-    get:
-      description: Получение всей иерархии джобов, начинающейся на {parentJobUuid}
-      tags: 
-        - AsyncJobsController
-      parameters: 
-        - name: parentJobUuid
-          description: Голова иерархии джобов
-          in: path
-          required: true
-          schema: 
-            type: string
-            format: uuid
-        - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Page'
-      responses: 
-        '200':
-          description: Ok
-          content: 
-            application/json: 
-              schema: 
-                $ref: '#/components/schemas/AsyncJobHierarchy'
-        '404':
-          description: Не найден джоб с таким parentJobUuid
-        '400':
-          description: Некорректный запрос
-        '500':
-          $ref: '#/components/responses/UncaughtException'
-
-  /async-jobs/hierarchy/related/{entityUuid}:
-    get:
-      description: Получение всех джобов, связанных с {entityUuid}
-      tags: 
-        - AsyncJobsController
-      parameters: 
-        - name: entityUuid
-          in: path
-          required: true
-          schema: 
-            type: string
-            format: uuid
-        - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Page'
+        Эта ручка нужна для ручного запуска пакетного сбора с фронта.
+        Успешное выполнение приводит к отправке в очередь сообщения `async-job.collection-batch-begin`
       responses:
-        '200':
-          description: Ok
+        '204':
+          description: Сообщение отправлено в очередь
           content:
-            application/json: 
-              schema: 
-                $ref: '#/components/schemas/AsyncJobHierarchyRelatedList'
-        '400':
-          description: Некорректный запрос
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobUuid'
         '500':
           $ref: '#/components/responses/UncaughtException'
-
+  /enqueue/collection-query:
+    post:
+      summary: Запустить collection-query вручную
+      description: |
+        Эта ручка нужна для ручного запуска сбора по одному запросу с фронта.
+        Успешное выполнение приводит к отправке в очередь сообщения `async-job.collection-query-begin`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchQueryItem'
+      responses:
+        '204':
+          description: Сообщение отправлено в очередь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobUuid'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
 components:
   schemas:
-    AsyncJobHierarchyRelatedList:
+    AsyncJobUuid:
       type: object
-      properties: 
-        list:
-          type: array
-          items: 
-            $ref: '#/components/schemas/AsyncJobHierarchy'
-      required: 
-        - list
-    AsyncJobHierarchy:
+      properties:
+        jobUuid:
+          type: string
+          format: uuid
+          description: UUID нового асинхронного джоба
+      required:
+        - jobUuid
+    SearchQueryItem:
       type: object
-      properties: 
-        root:
-          $ref: '#/components/schemas/AsyncJobItem'
-        children:
-          type: array
-          items:
-            $ref: '#/components/schemas/AsyncJobList'
-      required: 
-        - root
-        - children
-    AsyncJobItem:
-      type: object
-      properties: 
+      properties:
+        query:
+          type: string
+          description: Поисковый запрос
         uuid:
           type: string
           format: uuid
-        name:
-          type: string
-        parentUuid:
-          type: string
-          format: uuid
-        status:
-          $ref: '#/components/schemas/AsyncJobStatus'
-        result:
-          type: string
-        started_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        finished_at:
-          type: string
-          format: date-time
-      required: 
+          description: UUID строки в `settings.search_queries` (передаётся в job-postings-crud при сохранении вакансий).
+        isLazyScraping:
+          type: boolean
+          default: false
+          description: |
+            При `true` обход страниц прерывается, если на текущей странице нет новых `uid`;
+            при `false` (по умолчанию) цикл по страницам продолжается.
+      required:
         - uuid
-        - name
-        - status
-        - started_at
-    AsyncJobList:
-      type: object
-      properties: 
-        list:
-          type: array
-          items: 
-            $ref: '#/components/schemas/AsyncJobItem'
-      required: 
-        - list
-    AsyncJobStatus:
-      type: string
-      enum:
-        - STARTED
-        - SUCCEEDED
-        - FAILED
-        - CANCELED
-    AsyncJobEndMessage:
-      $ref: '../../messaging/async-job-end.yaml#/components/schemas/Message'
-    CommonMessage:
-      type: object
-      properties:
-        headers:
-          $ref: '../../messaging/common-orchestration-message.yaml#/components/schemas/MessageHeaders'
-        payload:
-          $ref: '../../messaging/common-orchestration-message.yaml#/components/schemas/MessagePayload'
-      required: 
-        - headers
-        - payload
-  parameters: 
+        - query
+  parameters:
     Size:
       name: size
       in: query
