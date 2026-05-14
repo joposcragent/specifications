@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Настройки шедулера orchestration-scheduler
-  description: 
+  description: ''
   version: 1.0.0
 servers:
   - url: http://orchestration-scheduler:8080/
@@ -10,25 +10,29 @@ servers:
 paths:
   /settings:
     get:
-      description: Чтение настроек шедулера
-      responses: 
+      description: Чтение настроек шедулера для указанного типа задачи
+      parameters:
+        - $ref: '#/components/parameters/JobType'
+      responses:
         '200':
           description: Настройки шедулера
-          content: 
+          content:
             application/json:
-              schema: 
+              schema:
                 $ref: '#/components/schemas/SchedulerSettings'
         '500':
           $ref: '#/components/responses/UncaughtException'
   /settings/cron-expression:
     put:
-      description: Обновление расписания запуска
-      requestBody: 
-        content: 
-          application/json: 
-            schema: 
+      description: Обновление расписания запуска для указанного типа задачи
+      parameters:
+        - $ref: '#/components/parameters/JobType'
+      requestBody:
+        content:
+          application/json:
+            schema:
               $ref: '#/components/schemas/UpdateCronExpression'
-      responses: 
+      responses:
         '200':
           description: Расписание обновлено
         '400':
@@ -37,13 +41,15 @@ paths:
           $ref: '#/components/responses/UncaughtException'
   /settings/next-run:
     put:
-      description: Принудительная установка даты следующего запуска
-      requestBody: 
-        content: 
-          application/json: 
-            schema: 
+      description: Принудительная установка даты следующего запуска для указанного типа задачи
+      parameters:
+        - $ref: '#/components/parameters/JobType'
+      requestBody:
+        content:
+          application/json:
+            schema:
               $ref: '#/components/schemas/UpdateNextRun'
-      responses: 
+      responses:
         '200':
           description: Дата следующего запуска обновлена
         '400':
@@ -52,32 +58,45 @@ paths:
           $ref: '#/components/responses/UncaughtException'
 components:
   schemas:
+    SchedulerJobType:
+      type: string
+      enum:
+        - COLLECTION_BATCH
+        - RETENTION
+      description: Значение orchestration.scheduler_jobs / колонки scheduler.job_type
     UpdateNextRun:
       type: object
-      properties: 
+      properties:
         value:
           type: string
           format: date-time
-      required: 
+      required:
         - value
     UpdateCronExpression:
       type: object
-      properties: 
+      properties:
         value:
           type: string
           example: '0 * * * *'
-      required: 
+      required:
         - value
     SchedulerSettings:
       type: object
-      properties: 
+      properties:
+        jobType:
+          $ref: '#/components/schemas/SchedulerJobType'
         nextRun:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
         cronExpression:
-          type: string
+          type:
+            - string
+            - 'null'
           example: '0 * * * *'
-      required: 
+      required:
+        - jobType
         - nextRun
         - cronExpression
     UuidsList:
@@ -93,6 +112,17 @@ components:
       required:
         - list
   parameters:
+    JobType:
+      name: jobType
+      in: query
+      required: false
+      description: Тип задачи планировщика; если не указан, используется COLLECTION_BATCH
+      schema:
+        type: string
+        enum:
+          - COLLECTION_BATCH
+          - RETENTION
+        default: COLLECTION_BATCH
     RequiredEntityUuid:
       name: jobPostingUuid
       in: path
@@ -104,11 +134,11 @@ components:
   responses:
     IncorrectRequest:
       description: Запрос не корректный
-      content: 
-        text/plain: 
-          schema: 
+      content:
+        text/plain:
+          schema:
             type: string
-          example: "Не зада обязательный параметр paramName"
+          example: "Не задан обязательный параметр paramName"
     UncaughtException:
       description: Необработанное исключение
       content:
