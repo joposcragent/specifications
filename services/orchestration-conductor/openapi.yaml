@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: REST API для оркестратора джобов
   version: 1.0.0
+servers:
+  - url: http://orchestration-conductor:8080/
+  - url: http://localhost:8084/  
 tags:
   - name: TopicsController
     description: Отправка сообщений в очереди
