@@ -1,4 +1,6 @@
-# Работа сервиса `job-postings-crud` с сообщениями Kafka
+<!-- markdownlint-disable MD013 MD060 -->
+
+# Работа сервиса `job-postings-evaluator` с сообщениями Kafka
 
 - Потребляет сообщения [`async-job.job-posting-evaluate-begin`] и выполняет оценку вакансии.
 - Публикует сообщения [`async-job.job-posting-evaluate-result`] с результатами оценки.

@@ -15,7 +15,7 @@ paths:
       tags:
         - evaluate
       requestBody: 
-        description: Список UUID вакансий, котрые надо оценить
+        description: Список UUID вакансий, которые надо оценить
         content: 
           application/json: 
             schema: 
@@ -66,7 +66,7 @@ paths:
       tags:
         - evaluate
       requestBody: 
-        description: Список UUID вакансий, котрые надо оценить
+        description: Список UUID вакансий, которые надо оценить
         content: 
           application/json: 
             schema: 
