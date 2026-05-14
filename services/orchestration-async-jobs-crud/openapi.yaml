@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: CRUD-операции над асинхронными джобами
   version: 1.0.0
+servers:
+  - url: http://orchestration-async-jobs-crud:8080/
+  - url: http://localhost:8085/  
 tags:
   - name: AsyncJobsController
     description: Работа с данными асинхронных джобов
