@@ -310,6 +310,10 @@ components:
         parentUuid:
           type: string
           format: uuid
+        context:
+          type: object
+          additionalProperties: true
+          description: Произвольный JSON-объект контекста джоба; при отсутствии в теле в БД записывается NULL
       required:
         - uuid
         - name
@@ -325,6 +329,10 @@ components:
           $ref: '#/components/schemas/AsyncJobStatus'
         result:
           type: string
+        context:
+          type: object
+          additionalProperties: true
+          description: Частичное обновление; значение null сбрасывает context в NULL
         finished_at:
           type: string
           format: date-time
@@ -342,6 +350,10 @@ components:
           format: uuid
         status:
           $ref: '#/components/schemas/AsyncJobStatus'
+        context:
+          type: object
+          additionalProperties: true
+          description: Контекст джоба из колонки context; null если в БД NULL
         result:
           type: string
         started_at:
