@@ -95,10 +95,17 @@ components:
             - string
             - 'null'
           example: '0 * * * *'
+        previousRun:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Момент последнего срабатывания тика в памяти процесса; не из БД
       required:
         - jobType
         - nextRun
         - cronExpression
+        - previousRun
     UuidsList:
       description: Список UUID (строки в формате UUID)
       type: object
