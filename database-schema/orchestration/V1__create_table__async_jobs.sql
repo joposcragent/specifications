@@ -14,6 +14,8 @@ create table if not exists orchestration.async_jobs
 
 comment on column orchestration.async_jobs.name is 'Имя джоба (collection-batch, job-posting-ceate, etc)';
 
+comment on column orchestration.async_jobs.context is 'Произвольный JSON-объект контекста джоба; задаётся при создании или обновлении (REST или Kafka begin). Не путать с result — итоговым объектом при завершении джоба';
+
 alter table orchestration.async_jobs
     owner to postgres;
 
