@@ -69,7 +69,7 @@
 4. Записывает статус в `joposcragent.orchestration.async_jobs`:
    1. `status` = `{terminalStatus}`
    2. `finished_at` = `updated_at` = `now()`
-5. Если у обновлённого джоба заполнен `parent_uuid` и строка-родитель в `joposcragent.orchestration.async_jobs` с `uuid` = этому `parent_uuid` имеет `status` = `STARTED`:
+5. Если в конфигурации сервиса `app.autoresolve-parent-tasks` = `true` (по умолчанию `false`) **и** у обновлённого джоба заполнен `parent_uuid` и строка-родитель в `joposcragent.orchestration.async_jobs` с `uuid` = этому `parent_uuid` имеет `status` = `STARTED`:
    1. Ищет в `joposcragent.orchestration.async_jobs` все строки с тем же `parent_uuid`, что и у обновлённого джоба, и со `status` = `STARTED` (сам обновлённый джоб после шага 4 уже не учитывается).
    2. Если таких строк нет, устанавливает родителю (`uuid` = `parent_uuid`) `status` = `SUCCEEDED` и `finished_at` = `updated_at` = `now()`.
 6. Возвращает HTTP 200 без тела.
