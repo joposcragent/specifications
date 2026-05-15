@@ -19,7 +19,20 @@
    1. При некорректной структуре логирует ошибку и публикует fail-сообщение п. 4.
 3. Асинхронно запускает тот же процесс, который запускает [`POST /crawler/start`]
    1. В `correlationId` передает `{payload}.jobUuid`
-4. При любом не перехваченном исключении публикует fail-сообщение [`async-job.collection-query-result`]:
+4. В случае, если цикл прошел вхолостую (вакансий по запросу нет вообще, либо нет ни одной новой), публикует canceled-сообщение [`async-job.collection-query-result`]:
+   1. Топик: `async-job.collection-query`
+   2. Заголовки:
+      1. `key` = `{key}`;
+      2. `type` = `async-job.collection-query-result`;
+      3. `createdAt` = текущий момент времени;
+      4. `schemaVersion` = `1.0`;
+   3. Тело:
+      1. `jobUuid` = `{key}`
+      2. `status` = `CANCELED`
+      3. `result` = `"${описание}"` - вакансий вообще нет, либо вакансии в принципе есть, но ни одной новой.
+      4. `pagesProcessed` = количество реально обработанных страниц
+      5. `newVacanciesSaved` = `0`;
+5. При любом не перехваченном исключении публикует fail-сообщение [`async-job.collection-query-result`]:
    1. Топик: `async-job.collection-query`
    2. Заголовки:
       1. `key` = `{key}`;
