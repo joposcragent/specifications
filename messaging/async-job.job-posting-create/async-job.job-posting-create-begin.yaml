@@ -66,6 +66,4 @@ components:
         - uid
         - title
         - url
-        - company
-        - content
         - publicationDate
