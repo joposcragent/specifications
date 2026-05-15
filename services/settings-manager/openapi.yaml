@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Управление профилем пользователя
-  version: 1.2.1
+  version: 1.2.2
 servers:
   - url: http://settings-manager:8080/
   - url: http://localhost:8080/
@@ -48,6 +48,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReferenceContextPersisted"
+        "500":
+          $ref: "#/components/responses/UncaughtException"
+
+  /reference-context/vector:
+    get:
+      description: |
+        Получение только векторного представления эталонного контекста (без текста и меток времени).
+        Удобно для сервисов оценки релевантности, которым не нужен полный объект ReferenceContext.
+      tags:
+        - reference-context
+      responses:
+        "200":
+          description: Вектор эталонного контекста
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferenceContextVector"
+        "202":
+          description: Эталонный контекст не задан
         "500":
           $ref: "#/components/responses/UncaughtException"
 
@@ -212,6 +231,17 @@ components:
         - context
         - vector
         - createdAt
+    ReferenceContextVector:
+      type: object
+      description: |
+        Только вектор эталонного контекста (ответ GET /reference-context/vector).
+      properties:
+        vector:
+          type: array
+          items:
+            type: number
+      required:
+        - vector
     PromptTemplate:
       type: object
       description: Шаблон промпта для генерации сопроводительного письма
