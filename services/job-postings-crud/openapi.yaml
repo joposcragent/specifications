@@ -602,7 +602,9 @@ components:
 
   parameters:
     CorrelationId:
-      description: correlationId асинхронной задачи; если задан, то некоторые эндпоинты должны отправлять события в очередь брокера Celery Orchestrator
+      description: |
+        UUID родительского async-job в PostgreSQL (`joposcragent.orchestration.async_jobs`).
+        Если задан, поведение асинхронных сценариев описано в Kafka-спецификациях сервиса ([async.md](./async.md)) и в каталоге [messaging](../../messaging/).
       name: X-Joposcragent-correlationId
       in: header
       schema:

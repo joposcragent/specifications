@@ -38,7 +38,7 @@
 | Входной параметр      | Источник      | Описание                 |
 | --------------------- | ------------- | ------------------------ |
 | 📌 `{jobPostingUuid}` | path-параметр | Внутренний UUID вакансии |
-| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator   |
+| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | UUID родительского async-job в `joposcragent.orchestration.async_jobs` |
 
 Алгоритм работы:
 
@@ -89,7 +89,7 @@
 | Входной параметр      | Источник | Описание                 |
 | --------------------- | -------- | ------------------------ |
 | 📌 `{jobPostingUuid}` | path     | Внутренний UUID вакансии |
-| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator   |
+| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | UUID родительского async-job в `joposcragent.orchestration.async_jobs` |
 
 Алгоритм работы:
 

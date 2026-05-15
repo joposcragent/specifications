@@ -93,7 +93,7 @@ paths:
         - search-query
       description: |
         Получение списка настроенных поисковых запросов.
-        При `activeOnly=true` возвращаются только строки с `isActive = true` (используется плановым `collection-batch` в celery-orchestrator).
+        При `activeOnly=true` возвращаются только строки с `isActive = true` (используется плановым заданием `COLLECTION_BATCH` в `orchestration-scheduler` при пакетном сборе).
       parameters:
         - name: activeOnly
           in: query

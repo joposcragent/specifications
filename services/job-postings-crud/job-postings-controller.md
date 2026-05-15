@@ -29,7 +29,7 @@
 |-----------------------|--------------------------------------------------|--------------------------------------------------|
 | 📌 `{jobPostingUuid}` | path-параметр                                    | Внутренний UUID вакансии                         |
 | 📌 `{jobPosting}`     | тело запроса                                     | Объект `JobPostingsItemWrite` с данными вакансии |
-| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | uuid родительского джоба в celery-orchestrator   |
+| `{correlationId}`     | заголовок запроса `X-Joposcragent-correlationId` | UUID родительского async-job в `joposcragent.orchestration.async_jobs` |
 
 Алгоритм работы:
 
@@ -49,21 +49,7 @@
    9. `content_vector` = `{jobPosting.contentVector}`
    10. `evaluation_status` = `{jobPosting.evaluationStatus}`
    11. `response_status` = `{jobPosting.responseStatus}`
-4. Если был передан не пустой `{correlationId}`, выполняет отправку события оркестратора:
-   1. В случае успешной вставки записи в БД:
-      1. Запрос `POST /events-queue/{eventName}` в `celery-orchestrator`;
-      2. `{eventName}` = `evaluation`;
-      3. `correlationId` = `{correlationId}`
-      4. `createdAt` = текущий момент времени
-      5. `jobPostingUuid` = `{jobPostingUuid}`
-   2. В случае возникновения не перехваченного исключения (п. 6 ниже):
-      1. Запрос `POST /events-queue/progress` в `celery-orchestrator`;
-      2. `correlationId` = `{correlationId}`
-      3. `createdAt` = текущий момент времени
-      4. `jobPostingUuid` = `{jobPostingUuid}`
-      5. `vacancyUrl` = `{jobPosting.url}`
-      6. `executionLog` = текст исключения
-      7. `status` = `FAILED`
+4. Заголовок `X-Joposcragent-correlationId` (если передан не пустой `{correlationId}`): идентификатор родительского async-job в схеме `orchestration` для согласованности с Kafka-оркестрацией; дальнейшие шаги пайплайна (создание/оценка вакансии по сообщениям) описаны в [async.md](async.md) и в каталоге [messaging](../../messaging/). REST-слой сохранения не вызывает отдельный HTTP-сервис оркестрации.
 5. При успешной записи в БД возвращает `HTTP 200`.
 6. При возникновении любого не перехваченного исключения:
    1. Логирует исключение с уровнем `error`

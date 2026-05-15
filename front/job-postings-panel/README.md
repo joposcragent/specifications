@@ -34,7 +34,7 @@
 - **Запрос:** `POST /evaluate/sync/{jobPostingUuid}`  
   Контракт: [OpenAPI job-postings-evaluator][job-postings-evaluator-openapi], тег `evaluate`.
 - **Базовый URL:** переменная **`VITE_JOB_POSTINGS_EVALUATOR_BASE_URL`**. Пустое значение — запросы на **тот же origin**, что и SPA; в Docker **nginx** фронта проксирует префикс **`/evaluate/`** на сервис `job-postings-evaluator`; в dev **Vite** — proxy на эвалуатор (см. `vite.config`).
-- **Тело запроса:** отсутствует. Заголовок `X-Joposcragent-correlationId` для оркестратора — опционально по контракту API.
+- **Тело запроса:** отсутствует. Заголовок `X-Joposcragent-correlationId` (UUID родительского async-job в `orchestration.async_jobs`) — опционально по контракту API.
 - **Успех (2xx):** после ответа выполнить **`GET /job-postings/{jobPostingUuid}`** (CRUD), обновить данные в открытой модалке и соответствующую строку в таблице (без полного перезапроса всего списка обязательно, но допустимо).
 - **Ошибка:** показать сообщение (например, snackbar); учитывать **404** / **5xx** от evaluator или CRUD.
 

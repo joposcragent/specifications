@@ -8,7 +8,6 @@
 - [Оболочка приложения](app-shell/README.md) — split меню/контент (ширина и скрытие меню, резиновый контент), тема, базовые URL
 - [Дашборд](dashboard/README.md) — релевантные вакансии в рассмотрении, таблица, инлайн-статусы
 - [Таблица вакансий и карточка](job-postings-panel/README.md) — общая панель таблицы (дашборд и «Вакансии»), модалка полей, кнопка переоценки `POST /evaluate/sync/{uuid}`
-- [Оркестратор (Flower)](orchestrator-flower/README.md) — iframe в контенте, `VITE_FLOWER_BASE_URL`
 - [Эталонный контекст](reference-context/README.md)
 - [Поисковые запросы](search-queries/README.md) — запросы hh.ru, пороги релевантности на строке, флаги активности и «ленивого» сбора
 - [Настройка промпта](prompt-template/README.md)
@@ -18,7 +17,6 @@
 | Раздел меню | Подпункт | Документ |
 |-------------|----------|----------|
 | Главная | Дашборд (по умолчанию) | [dashboard/README.md](dashboard/README.md) |
-| Главная | Оркестратор | [orchestrator-flower/README.md](orchestrator-flower/README.md) |
 | Настройки | Эталонный контекст (по умолчанию) | [reference-context/README.md](reference-context/README.md) |
 | Настройки | Поисковые запросы | [search-queries/README.md](search-queries/README.md) |
 | Настройки | Настройка промпта | [prompt-template/README.md](prompt-template/README.md) |
@@ -29,7 +27,6 @@
 flowchart LR
   subgraph home [Home]
     dash[Dashboard]
-    orch[FlowerIframe]
   end
   subgraph settings [Settings]
     ref[ReferenceContext]
@@ -49,7 +46,7 @@ flowchart LR
 | `VITE_SETTINGS_MANAGER_BASE_URL` | Базовый URL сервиса настроек |
 | `VITE_JOB_POSTINGS_CRUD_BASE_URL` | Базовый URL CRUD вакансий |
 | `VITE_JOB_POSTINGS_EVALUATOR_BASE_URL` | Базовый URL сервиса оценивания вакансий (`/evaluate/...`); пусто — same-origin (nginx/Vite proxy) |
-| `VITE_FLOWER_BASE_URL` | URL Flower для встраивания в iframe на маршруте оркестратора |
+| `VITE_ORCHESTRATION_CONDUCTOR_BASE_URL` | Базовый URL `orchestration-conductor` для ручного enqueue (`/enqueue/...`); пусто — same-origin (nginx/Vite proxy) |
 
 Аутентификация на фронте не предусмотрена. CORS настраивается на каждом Spring-сервисе под origin фронта (dev: origin Vite; prod: URL nginx).
 
@@ -58,6 +55,7 @@ flowchart LR
 - Вакансии: [services/job-postings-crud/openapi.yaml](../services/job-postings-crud/openapi.yaml)
 - Оценивание вакансий: [services/job-postings-evaluator/openapi.yaml](../services/job-postings-evaluator/openapi.yaml)
 - Настройки: [services/settings-manager/openapi.yaml](../services/settings-manager/openapi.yaml)
+- Ручной запуск сбора (enqueue в Kafka): [services/orchestration-conductor/openapi.yaml](../services/orchestration-conductor/openapi.yaml)
 
 ## Визуальный ориентир
 

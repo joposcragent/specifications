@@ -53,11 +53,10 @@
 
 ### Ручной сбор вакансий
 
-- **POST** `{VITE_CELERY_ORCHESTRATOR_BASE_URL}/events-queue/collection-query` (через dev-proxy `/events-queue/…`) с телом JSON:
-  - `name` — отображаемое имя строки;
-  - `searchQuery` — значение `query` из строки;
-  - `searchQueryUuid` — `uuid` строки;
-  - `lazy` — значение `isLazyScraping`.
+- **POST** `{VITE_ORCHESTRATION_CONDUCTOR_BASE_URL}/enqueue/collection-query` (через dev-proxy и nginx — префикс к `orchestration-conductor`, см. репозиторий `web-front`) с телом JSON по схеме `SearchQueryItem` в [orchestration-conductor OpenAPI](../../services/orchestration-conductor/openapi.yaml):
+  - `uuid` — `uuid` строки поискового запроса;
+  - `query` — значение поля `query` из строки (query-string hh.ru);
+  - `isLazyScraping` — значение `isLazyScraping` из строки.
 
 ## Алгоритмы активных элементов
 
@@ -65,8 +64,8 @@
 
 ### Кнопка «Собрать вакансии»
 
-- **Клик:** `POST /events-queue/collection-query` с полями `name`, `searchQuery`, `searchQueryUuid`, `lazy` (см. выше).
-- **Ошибка сети / HTTP:** показать текст ошибки (см. обёртку `orchestratorErrorMessage`).
+- **Клик:** `POST …/enqueue/collection-query` с полями `uuid`, `query`, `isLazyScraping` (см. выше).
+- **Ошибка сети / HTTP:** показать текст ошибки (обёртка сообщения об ошибке HTTP-клиента conductor).
 
 ## Открытие страницы (mount)
 
@@ -79,4 +78,4 @@
 - [Оболочка приложения](../app-shell/README.md)
 - [search-query.md](../../services/settings-manager/search-query.md)
 - [settings-manager OpenAPI](../../services/settings-manager/openapi.yaml)
-- [celery-orchestrator OpenAPI](../../services/celery-orchestrator/openapi.yaml)
+- [orchestration-conductor OpenAPI](../../services/orchestration-conductor/openapi.yaml)
