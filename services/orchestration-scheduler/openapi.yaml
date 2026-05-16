@@ -7,7 +7,7 @@ servers:
   - url: http://orchestration-scheduler:8080/
   - url: http://localhost:8083/
 
-paths:
+paths:  
   /settings:
     get:
       description: Чтение настроек шедулера для указанного типа задачи
@@ -19,7 +19,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SchedulerSettings'
+                $ref: '#/components/schemas/SchedulerSettingsItem'
         '500':
           $ref: '#/components/responses/UncaughtException'
   /settings/cron-expression:
@@ -80,7 +80,7 @@ components:
           example: '0 * * * *'
       required:
         - value
-    SchedulerSettings:
+    SchedulerSettingsItem:
       type: object
       properties:
         jobType:
