@@ -18,10 +18,10 @@
 | Раздел меню | Подпункт | Документ |
 |-------------|----------|----------|
 | Главная | Дашборд (по умолчанию) | [dashboard/README.md](dashboard/README.md) |
-| Планировщик | Планировщик | [scheduler/README.md](scheduler/README.md) |
 | Настройки | Эталонный контекст (по умолчанию) | [reference-context/README.md](reference-context/README.md) |
 | Настройки | Поисковые запросы | [search-queries/README.md](search-queries/README.md) |
 | Настройки | Настройка промпта | [prompt-template/README.md](prompt-template/README.md) |
+| Настройки | Планировщик | [scheduler/README.md](scheduler/README.md) |
 
 ## Диаграмма навигации
 
@@ -30,16 +30,13 @@ flowchart LR
   subgraph home [Home]
     dash[Dashboard]
   end
-  subgraph sched [Scheduler]
-    sch[SchedulerPage]
-  end
   subgraph settings [Settings]
     ref[ReferenceContext]
     sq[SearchQueries]
     pt[PromptTemplate]
+    sch[SchedulerPage]
   end
   shell[AppShell] --> home
-  shell --> sched
   shell --> settings
 ```
 
