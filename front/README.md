@@ -11,12 +11,14 @@
 - [Эталонный контекст](reference-context/README.md)
 - [Поисковые запросы](search-queries/README.md) — запросы hh.ru, пороги релевантности на строке, флаги активности и «ленивого» сбора
 - [Настройка промпта](prompt-template/README.md)
+- [Планировщик](scheduler/README.md) — расписание и принудительный запуск заданий `orchestration-scheduler`
 
 ## Маршруты (логическая карта)
 
 | Раздел меню | Подпункт | Документ |
 |-------------|----------|----------|
 | Главная | Дашборд (по умолчанию) | [dashboard/README.md](dashboard/README.md) |
+| Планировщик | Планировщик | [scheduler/README.md](scheduler/README.md) |
 | Настройки | Эталонный контекст (по умолчанию) | [reference-context/README.md](reference-context/README.md) |
 | Настройки | Поисковые запросы | [search-queries/README.md](search-queries/README.md) |
 | Настройки | Настройка промпта | [prompt-template/README.md](prompt-template/README.md) |
@@ -28,12 +30,16 @@ flowchart LR
   subgraph home [Home]
     dash[Dashboard]
   end
+  subgraph sched [Scheduler]
+    sch[SchedulerPage]
+  end
   subgraph settings [Settings]
     ref[ReferenceContext]
     sq[SearchQueries]
     pt[PromptTemplate]
   end
   shell[AppShell] --> home
+  shell --> sched
   shell --> settings
 ```
 
@@ -47,6 +53,7 @@ flowchart LR
 | `VITE_JOB_POSTINGS_CRUD_BASE_URL` | Базовый URL CRUD вакансий |
 | `VITE_JOB_POSTINGS_EVALUATOR_BASE_URL` | Базовый URL сервиса оценивания вакансий (`/evaluate/...`); пусто — same-origin (nginx/Vite proxy) |
 | `VITE_ORCHESTRATION_CONDUCTOR_BASE_URL` | Базовый URL `orchestration-conductor` для ручного enqueue (`/enqueue/...`); пусто — same-origin (nginx/Vite proxy) |
+| `VITE_ORCHESTRATION_SCHEDULER_BASE_URL` | Базовый URL `orchestration-scheduler` (`/settings/...`, `/execute`); пусто — same-origin (nginx/Vite proxy) |
 
 Аутентификация на фронте не предусмотрена. CORS настраивается на каждом Spring-сервисе под origin фронта (dev: origin Vite; prod: URL nginx).
 
@@ -56,6 +63,7 @@ flowchart LR
 - Оценивание вакансий: [services/job-postings-evaluator/openapi.yaml](../services/job-postings-evaluator/openapi.yaml)
 - Настройки: [services/settings-manager/openapi.yaml](../services/settings-manager/openapi.yaml)
 - Ручной запуск сбора (enqueue в Kafka): [services/orchestration-conductor/openapi.yaml](../services/orchestration-conductor/openapi.yaml)
+- Планировщик (расписание, список настроек, execute): [services/orchestration-scheduler/openapi.yaml](../services/orchestration-scheduler/openapi.yaml)
 
 ## Визуальный ориентир
 
