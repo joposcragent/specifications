@@ -8,6 +8,18 @@ servers:
   - url: http://localhost:8083/
 
 paths:
+  /execute:
+    post:
+      description: Принудительный немедленный запуск джоба
+      parameters:
+        - $ref: '#/components/parameters/JobType'
+      responses: 
+        '200':
+          description: Джоб успешно запущен
+        '400':
+          $ref: '#/components/responses/IncorrectRequest'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
   /settings/list:
     get:
       description: Получение полной таблицы настроек
