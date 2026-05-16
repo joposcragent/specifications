@@ -54,25 +54,31 @@
 
 `POST /async-jobs/{jobUuid}/finish/{terminalStatus}`
 
-| Входной параметр         | Источник      | Комментарий                         |
-|--------------------------|---------------|-------------------------------------|
-| 📌`{jobUuid}`            | path-параметр |                                     |
-| 📌`{terminalStatus}`     | path-параметр | `SUCCEEDED`, `FAILED` или `CANCELED`|
+| Входной параметр         | Источник      | Комментарий                                      |
+|--------------------------|---------------|--------------------------------------------------|
+| 📌`{jobUuid}`            | path-параметр |                                                  |
+| 📌`{terminalStatus}`     | path-параметр | `SUCCEEDED`, `FAILED` или `CANCELED`             |
+| `{finishAsyncJobItem}`   | тело запроса  | Опционально; объект `FinishAsyncJobItem`         |
 
 Алгоритм работы:
 
 1. Проверяет, что `{terminalStatus}` — одно из значений `SUCCEEDED`, `FAILED`, `CANCELED`.
    1. Иначе возвращает HTTP 400.
-2. Ищет в БД `joposcragent.orchestration.async_jobs` запись с `uuid` = `{jobUuid}`.
+2. Если передано тело запроса, валидирует его как `FinishAsyncJobItem`.
+   1. При ошибках валидации возвращает HTTP 400.
+3. Ищет в БД `joposcragent.orchestration.async_jobs` запись с `uuid` = `{jobUuid}`.
    1. Если не находит, возвращает HTTP 404.
-3. Если у найденной записи `status` не равен `STARTED`, возвращает HTTP 409 без изменений в БД.
-4. Записывает статус в `joposcragent.orchestration.async_jobs`:
-   1. `status` = `{terminalStatus}`
-   2. `finished_at` = `updated_at` = `now()`
-5. Если в конфигурации сервиса `app.autoresolve-parent-tasks` = `true` (по умолчанию `false`) **и** у обновлённого джоба заполнен `parent_uuid` и строка-родитель в `joposcragent.orchestration.async_jobs` с `uuid` = этому `parent_uuid` имеет `status` = `STARTED`:
-   1. Ищет в `joposcragent.orchestration.async_jobs` все строки с тем же `parent_uuid`, что и у обновлённого джоба, и со `status` = `STARTED` (сам обновлённый джоб после шага 4 уже не учитывается).
+4. Если у найденной записи `status` не равен `STARTED`, возвращает HTTP 409 без изменений в БД.
+5. Записывает в `joposcragent.orchestration.async_jobs` для найденной строки:
+   1. `status` = `{terminalStatus}`;
+   2. `finished_at` = `updated_at` = `now()`;
+   3. если в теле присутствует объект `{finishAsyncJobItem}` и в нём указан ключ `context`, обновляет колонку `context` (значение JSON `null` → NULL, как в PATCH);
+   4. если в теле присутствует объект `{finishAsyncJobItem}` и в нём указан ключ `result`, обновляет колонку `result` (сериализация значения в хранимый вид — как `payload.result` при обработке Kafka result в [async.md](./async.md));
+   5. если тела нет или в нём нет ключей `context` и `result`, колонки `context` и `result` не меняются.
+6. Если в конфигурации сервиса `app.autoresolve-parent-tasks` = `true` (по умолчанию `false`) **и** у обновлённого джоба заполнен `parent_uuid` и строка-родитель в `joposcragent.orchestration.async_jobs` с `uuid` = этому `parent_uuid` имеет `status` = `STARTED`:
+   1. Ищет в `joposcragent.orchestration.async_jobs` все строки с тем же `parent_uuid`, что и у обновлённого джоба, и со `status` = `STARTED` (сам обновлённый джоб после шага 5 уже не учитывается).
    2. Если таких строк нет, устанавливает родителю (`uuid` = `parent_uuid`) `status` = `SUCCEEDED` и `finished_at` = `updated_at` = `now()`.
-6. Возвращает HTTP 200 без тела.
+7. Возвращает HTTP 200 без тела.
 
 ## Получение данных асинхронного джоба
 

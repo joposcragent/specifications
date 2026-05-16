@@ -73,8 +73,10 @@
 ## Связь с REST
 
 Поведение при result по смыслу совпадает с
-`POST /async-jobs/{jobUuid}/finish/{terminalStatus}` из [readme][readme-finish],
-но инициируется событием Kafka, а не HTTP. Поведение при begin — с созданием
+`POST /async-jobs/{jobUuid}/finish/{terminalStatus}` из [readme][readme-finish]
+(в т.ч. запись `result`); опциональное тело `FinishAsyncJobItem` на finish допускает
+явно задать `context` и `result` при HTTP, см. [readme][readme-finish].
+Инициация при Kafka — событием из топика, а не HTTP-запросом. Поведение при begin — с созданием
 строки и связями, как при сочетании `POST /async-jobs/{jobUuid}` и при
 необходимости `POST .../related/...` из [readme][readme-create] и
 [readme][readme-related]. Поле

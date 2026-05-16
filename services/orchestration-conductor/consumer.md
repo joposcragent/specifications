@@ -1,9 +1,9 @@
 # Потребители сообщений
 
-Работает с PostgreSQL:
+Интеграции по HTTP:
 
-- База данных `joposcragent`
-- Схема `orchestration`
+- [`settings-manager`][settings-manager-index] — активные поисковые запросы (см. раздел «Запуск пакетного сбора вакансий»);
+- [`orchestration-async-jobs-crud`][async-jobs-crud-readme] — учёт асинхронных джобов (см. раздел «Завершение пакетного сбора»).
 
 Потребляет сообщения в топиках Kafka:
 
@@ -64,26 +64,29 @@
 
 ## Завершение пакетного сбора
 
-Обрабатывает сообщения `async-job.collection-query-result` и закрывает родительский джоб `async-job.collection-batch`, если все его подчиненные джобы завершены.
+Обрабатывает сообщения `async-job.collection-query-result` и закрывает родительский джоб `async-job.collection-batch`, если все его подчинённые джобы завершены. Данные джобов и смена завершающего статуса выполняются **только** через REST API [`orchestration-async-jobs-crud`][async-jobs-crud-readme]; `orchestration-conductor` не обращается к PostgreSQL по учёту джобов.
 
-| Входящий параметр | Источник            | Описание                                   |
-|-------------------|---------------------|--------------------------------------------|
-| 📌`{key}`         | Заголовок сообщения |                                            |
-| 📌`{type}`        | Заголовок сообщения |                                            |
-| 📌`{createdAt}`   | Заголовок сообщения |                                            |
-| 📌`{payload}`     | Тело сообщения      | схема [`async-job.collection-query-result`] |
+| Входящий параметр | Источник            | Описание                                                         |
+|-------------------|---------------------|------------------------------------------------------------------|
+| 📌`{key}`         | Заголовок сообщения |                                                                  |
+| 📌`{type}`        | Заголовок сообщения |                                                                  |
+| 📌`{createdAt}`   | Заголовок сообщения |                                                                  |
+| 📌`{payload}`     | Тело сообщения      | схема [`async-job.collection-query-result`]                      |
 
 Алгоритм работы:
 
 1. Слушает топик `async-job.collection-query`, выбирая из него только сообщения с заголовком `type` = `async-job.collection-query-result`.
-2. Запросом к БД получает `{parentUuid}` от джоба с `uuid` = `{payload}.jobUuid`,
-   1. Если `{parentUuid}` не задан, то молча завершает обработку.
-3. Запросом к БД из таблицы `joposcragent.orchestration.async_jobs` получает все джобы, у которых (одновременно):
-   1. `parent_uuid` = `{parentUuid}`;
-   2. `status` не в списке (`'SUCCEEDED'`, `'FAILED'`, `'CANCELED'`).
-4. Если список пустой, то:
-   1. Логирует INFO `Auto resolving parent task ${parentUuid}`
-   2. Устанавливает status = `'SUCCEEDED'` для джоба с `uuid` = `${parentUuid}`
+2. Запросом `GET /async-jobs/{payload.jobUuid}` к [`orchestration-async-jobs-crud`][async-jobs-crud-readme] получает джоб `{jobItem}` (тело ответа — `AsyncJobItem`).
+   1. При ответе HTTP 404 логирует предупреждение и завершает обработку сообщения.
+   2. Если у `{jobItem}` поле `parentUuid` отсутствует или равно `null`, молча завершает обработку.
+3. Запросом `GET /async-jobs/list?parentJobUuid={jobItem.parentUuid}&status=STARTED` к [`orchestration-async-jobs-crud`][async-jobs-crud-readme] получает список дочерних джобов родителя, которые ещё в работе (`AsyncJobList`).
+   1. Если массив `list` непустой, завершает обработку (есть незавершённые подзадачи).
+4. Если `list` пустой, то:
+   1. Логирует INFO `Auto resolving parent task ${jobItem.parentUuid}`.
+   2. Вызывает `POST /async-jobs/{jobItem.parentUuid}/finish/SUCCEEDED` к [`orchestration-async-jobs-crud`][async-jobs-crud-readme] с телом `application/json` (схема [`FinishAsyncJobItem`][finish-async-job-item]).
+      1. В теле **обязательно** передаёт поле `result` — JSON-объект `{"autoResolved": true, "autoResolveSource": "{payload}.jobUuid"}`: `autoResolveSource` равен UUID дочернего джоба (`{payload}.jobUuid`), по результату которого принято решение о завершении родителя.
+      2. При ответе HTTP 409 (у родителя статус уже не `STARTED`, например родитель уже автозавершён этим же сервисом по другому пути) считает шаг успешно выполненным с точки зрения идемпотентности; при необходимости пишет сообщение уровня DEBUG.
+      3. При ответе HTTP 404 логирует ошибку (несогласованное состояние данных).
 
 ## Запуск оценки новой вакансии
 
@@ -122,3 +125,7 @@
 [`async-job.job-posting-evaluate-begin`]: ../../messaging/async-job.job-posting-evaluate/async-job.job-posting-evaluate-begin.yaml
 [`async-job.collection-batch-result`]: ../../messaging/async-job.collection-batch/async-job.collection-batch-result.yaml
 [`async-job.collection-query-result`]: ../../messaging/async-job.collection-query/async-job.collection-query-result.yaml
+
+[settings-manager-index]: ../settings-manager/index.md
+[async-jobs-crud-readme]: ../orchestration-async-jobs-crud/readme.md
+[finish-async-job-item]: ../orchestration-async-jobs-crud/openapi.yaml#/components/schemas/FinishAsyncJobItem

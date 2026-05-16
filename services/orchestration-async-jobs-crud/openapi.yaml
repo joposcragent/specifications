@@ -101,6 +101,15 @@ paths:
           schema:
             $ref: '#/components/schemas/AsyncJobTerminalStatus'
           required: true
+      requestBody:
+        required: false
+        description: >
+          Необязательные поля для записи в `context` и `result` в той же операции,
+          что и перевод джоба в терминальный статус.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinishAsyncJobItem'
       responses: 
         '200':
           description: Джоб завершен
@@ -340,6 +349,23 @@ components:
           type: string
           format: date-time
       minProperties: 1
+    FinishAsyncJobItem:
+      type: object
+      description: >
+        Опциональное тело `POST .../finish/{terminalStatus}`. Все поля необязательны;
+        отсутствующие ключи не меняют соответствующие колонки в БД.
+      additionalProperties: false
+      properties:
+        context:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: При передаче записывается в колонку `context` (JSON `null` → NULL, как у PATCH).
+        result:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: При передаче записывается в колонку `result` (сериализация объекта в хранимое значение — как у `payload.result` при обработке Kafka result).
     AsyncJobItem:
       type: object
       properties: 
