@@ -2,12 +2,25 @@ openapi: 3.1.0
 info:
   title: Настройки шедулера orchestration-scheduler
   description: ''
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: http://orchestration-scheduler:8080/
   - url: http://localhost:8083/
 
-paths:  
+paths:
+  /settings/list:
+    get:
+      description: Получение полной таблицы настроек
+      responses:
+        '200':
+          description: Таблица настроек всех типов джобов
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/SchedulerSettingsList'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
+      
   /settings:
     get:
       description: Чтение настроек шедулера для указанного типа задачи
@@ -80,6 +93,13 @@ components:
           example: '0 * * * *'
       required:
         - value
+    SchedulerSettingsList:
+      type: object
+      properties:
+        list:
+          type: array
+          items: 
+            $ref: '#/components/schemas/SchedulerSettingsItem'
     SchedulerSettingsItem:
       type: object
       properties:
