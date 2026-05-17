@@ -20,13 +20,13 @@
 
 ## Синхронизация оперативного кэша демона {#scheduler-cache-sync}
 
-После успешной записи в БД колонок `next_run` или `cron_expression` через
-`PUT /settings/cron-expression` или `PUT /settings/next-run` сервис обязан
+После успешной записи в БД колонок `next_run` или `interval` через
+`PUT /settings/interval` или `PUT /settings/next-run` сервис обязан
 **инициировать перечитывание** соответствующей записи в **локальном
 оперативном кэше** планировщика (см. шаг 1 в [orchestration-scheduler задания
 по расписанию][cron-spec]: что хранится в кэше и как он используется в тике).
 В памяти для затронутого `job_type` должны оказаться актуальные `next_run` и
-`cron_expression`, совпадающие с только что сохранённой строкой в PostgreSQL.
+`interval`, совпадающие с только что сохранённой строкой в PostgreSQL.
 Поле `previousRun` в кэше не приходит из БД и при перечитывании одной записи
 сохраняет прежнее значение в памяти процесса (см. раздел «Чтение настроек
 шедулера» ниже).
@@ -43,7 +43,7 @@
 1. На основании данных в таблице `joposcragent.orchestration.scheduler` и
    полного набора значений перечисления `orchestration.scheduler_jobs`
    строит массив объектов `SchedulerSettingsItem` (поля **`nextRun`** и
-   **`cronExpression`** — из строки таблицы при `LEFT JOIN`, иначе оба
+   **`interval`** — из строки таблицы при `LEFT JOIN`, иначе оба
    `null`).
 2. Для каждого элемента массива поле **`previousRun`** заполняется из
    **оперативного кэша** планировщика для соответствующего `job_type` (как у
@@ -86,7 +86,7 @@
    `COLLECTION_BATCH`, если параметр отсутствует.
 2. Выбирает строку из таблицы `scheduler` с `job_type` = этому значению.
 3. Возвращает тело `SchedulerSettingsItem`: поле `jobType` = выбранный тип; поля
-   `nextRun` и `cronExpression` = значения из строки таблицы либо оба `null`,
+   `nextRun` и `interval` = значения из строки таблицы либо оба `null`,
    если строки нет; поле `previousRun` = момент последнего срабатывания тика
    для этого `job_type` в **оперативном кэше** текущего процесса, либо `null`,
    если с момента старта процесса не было такого срабатывания или в кэше нет
@@ -94,28 +94,28 @@
 4. При любом не перехваченном исключении возвращает HTTP 500 с текстом
    ошибки.
 
-Ответ: поля `nextRun` и `cronExpression` отражают **персистентное** состояние
+Ответ: поля `nextRun` и `interval` отражают **персистентное** состояние
 в БД (не обязаны совпадать с оперативным кэшем демона по этим полям до
 синхронизации после `PUT`). Поле `previousRun` отражает только **оперативное**
 состояние в памяти процесса и в БД не хранится.
 
 ## Обновление расписания запуска
 
-`PUT /settings/cron-expression?jobType={jobType}`
+`PUT /settings/interval?jobType={jobType}`
 
-| Входной параметр           | Источник       | Комментарий                     |
-|----------------------------|----------------|---------------------------------|
-| `{jobType}`                | query-параметр | по умолчанию `COLLECTION_BATCH` |
-| 📌`{UpdateCronExpression}` | тело запроса   | расписание в формате crontab    |
+| Входной параметр     | Источник       | Комментарий                                      |
+|----------------------|----------------|--------------------------------------------------|
+| `{jobType}`          | query-параметр | по умолчанию `COLLECTION_BATCH`                  |
+| 📌`{UpdateInterval}` | тело запроса   | расписание в формате [Internet Duration RFC3339] |
 
 Алгоритм работы:
 
 1. Определяет целевой `job_type` как для `GET /settings`.
 2. Если строка с этим `job_type` **есть** — записывает в её колонку
-   `cron_expression` значение `{UpdateCronExpression}.value`.
+   `interval` значение `{UpdateInterval}.value`.
 3. Если строки **нет** — **создаёт** строку: `job_type` = целевой тип,
-   `cron_expression` = `{UpdateCronExpression}.value`, `next_run` =
-   ближайший момент после текущего `now` по новому `cron_expression` (как у
+   `interval` = `{UpdateInterval}.value`, `next_run` =
+   ближайший момент после текущего `now` по новому `interval` (как у
    демона, см. [orchestration-scheduler задания по расписанию][cron-spec]).
 4. Инициирует **перечитывание локального оперативного кэша** для этого
    `job_type` из БД (см. [синхронизацию кэша](#scheduler-cache-sync) и
@@ -138,8 +138,8 @@
 2. Если строка с этим `job_type` **есть** — записывает в колонку `next_run`
    значение `{UpdateNextRun}.value`.
 3. Если строки **нет** — **создаёт** строку: `job_type` = целевой тип,
-   `next_run` = `{UpdateNextRun}.value`, `cron_expression` = дефолт из
-   миграции для `scheduler` (`'0 * * * *'`).
+   `next_run` = `{UpdateNextRun}.value`, `interval` = дефолт из
+   миграции для `scheduler` (`'PT1H'`).
 4. Инициирует **перечитывание локального оперативного кэша** для этого
    `job_type` из БД (см. [синхронизацию кэша](#scheduler-cache-sync) и
    [cron-spec], шаг 1).
@@ -147,3 +147,4 @@
    ошибки.
 
 [cron-spec]: cron-jobs.md
+[Internet Duration RFC3339]: https://www.ietf.org/archive/id/draft-tsai-duration-00.html#name-internet-duration-format

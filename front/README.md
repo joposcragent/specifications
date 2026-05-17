@@ -11,7 +11,7 @@
 - [Эталонный контекст](reference-context/README.md)
 - [Поисковые запросы](search-queries/README.md) — запросы hh.ru, пороги релевантности на строке, флаги активности и «ленивого» сбора
 - [Настройка промпта](prompt-template/README.md)
-- [Планировщик](scheduler/README.md) — расписание и принудительный запуск заданий `orchestration-scheduler`
+- [Планировщик](scheduler/README.md) — интервал между запусками (ISO-8601 duration), следующий запуск и принудительный запуск в `orchestration-scheduler`
 
 ## Маршруты (логическая карта)
 

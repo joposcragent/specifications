@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Настройки шедулера orchestration-scheduler
   description: ''
-  version: 1.1.0
+  version: 2.0.0
 servers:
   - url: http://orchestration-scheduler:8080/
   - url: http://localhost:8083/
@@ -47,16 +47,16 @@ paths:
                 $ref: '#/components/schemas/SchedulerSettingsItem'
         '500':
           $ref: '#/components/responses/UncaughtException'
-  /settings/cron-expression:
+  /settings/interval:
     put:
-      description: Обновление расписания запуска для указанного типа задачи
+      description: Обновление длительности интервала между запусками в формате [RFC3339](https://www.ietf.org/archive/id/draft-tsai-duration-00.html#name-internet-duration-format)
       parameters:
         - $ref: '#/components/parameters/JobType'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateCronExpression'
+              $ref: '#/components/schemas/UpdateInterval'
       responses:
         '200':
           description: Расписание обновлено
@@ -93,16 +93,17 @@ components:
       type: object
       properties:
         value:
+          description: Дата и время следующего запуска (ISO-8601 `date-time`, с часовым поясом)
           type: string
           format: date-time
       required:
         - value
-    UpdateCronExpression:
+    UpdateInterval:
       type: object
       properties:
         value:
           type: string
-          example: '0 * * * *'
+          example: 'PT6H'
       required:
         - value
     SchedulerSettingsList:
@@ -122,11 +123,11 @@ components:
             - string
             - 'null'
           format: date-time
-        cronExpression:
+        interval:
           type:
             - string
             - 'null'
-          example: '0 * * * *'
+          example: 'PT1H'
         previousRun:
           type:
             - string
@@ -136,7 +137,7 @@ components:
       required:
         - jobType
         - nextRun
-        - cronExpression
+        - interval
         - previousRun
     UuidsList:
       description: Список UUID (строки в формате UUID)
