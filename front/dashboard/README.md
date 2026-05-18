@@ -17,6 +17,10 @@
 |  Таблица вакансий (data table M3)                                 |
 |  колонки: название (+ кнопка «Показать текст») | URL | ...        |
 +------------------------------------------------------------------+
+|  Таблица «последние корневые async jobs» (см. ниже)               |
++------------------------------------------------------------------+
+|  [Кнопка «Собрать вакансии»]                                       |
++------------------------------------------------------------------+
 |  [Модальное окно: полный текст вакансии] — по кнопке у названия   |
 +------------------------------------------------------------------+
 ```
@@ -60,6 +64,16 @@
 (плюс при необходимости `title`, `company`).
 
 Контракт зафиксирован в [OpenAPI job-postings-crud][job-postings-crud-openapi] (версия **1.4.0** и выше).
+
+### Последние корневые async jobs (под таблицей вакансий, над кнопкой сбора)
+
+- **Метод:** `GET /async-jobs/last-root-status`
+- **Базовый URL:** `VITE_ORCHESTRATION_ASYNC_JOBS_CRUD_BASE_URL` (тот же клиент, что для экрана [Оркестратор · async jobs][orchestrator-async-jobs-readme]).
+- **Ответ:** `LastRootJobsStatusList` — массив `list` элементов `AsyncJobItem` (см. [OpenAPI orchestration-async-jobs-crud][async-jobs-crud-openapi]).
+- **Таблица без пагинации:** колонки `name`, `parentUuid`, `status`, `started_at`, `finished_at`, `result`, `context` (ключи в DTO как в `AsyncJobItem`).
+- **Колонка `status`:** визуально выделена цветом в зависимости от значения (`STARTED`, `SUCCEEDED`, `FAILED`, `CANCELED`).
+- **Каждая ячейка строки:** ссылка (`RouterLink`) на маршрут Оркестратора с query `jobUuid={uuid}` и `openDetail=1`; при открытии экрана применяется отбор по `jobUuid` и показывается модалка карточки джобы (см. [Оркестратор · async jobs][orchestrator-async-jobs-readme]).
+- **Ошибка / загрузка:** индикатор загрузки, при ошибке — сообщение (например `v-alert`), таблица вакансий при этом остаётся доступной.
 
 ### Колонки таблицы
 
@@ -127,6 +141,7 @@
 2. Выполнить `GET /job-postings/list` с параметрами дашборда (`evaluationStatus=RELEVANT`, два значения `responseStatus=NEW` и `RESPONDED`), `page=1`, `size=30`.
 3. **Успех 200:** если `list` пуст — показать пустое состояние.
 4. **Ошибка:** показать сообщение об ошибке.
+5. Параллельно или независимо от п. 2–4: запрос `GET /async-jobs/last-root-status` для блока последних корневых джобов (см. подраздел выше).
 
 ## Обновление страницы (F5, повторный вход на маршрут)
 
@@ -137,10 +152,14 @@
 
 - [Оболочка приложения][app-shell-readme]
 - [Таблица вакансий и карточка][job-postings-panel-readme]
+- [Оркестратор · async jobs][orchestrator-async-jobs-readme]
 - [Настройка промпта][prompt-template-readme]
 - [OpenAPI job-postings-crud][job-postings-crud-openapi]
+- [OpenAPI orchestration-async-jobs-crud][async-jobs-crud-openapi]
 
 [job-postings-crud-openapi]: ../../services/job-postings-crud/openapi.yaml
+[async-jobs-crud-openapi]: ../../services/orchestration-async-jobs-crud/openapi.yaml
 [app-shell-readme]: ../app-shell/README.md
 [job-postings-panel-readme]: ../job-postings-panel/README.md
+[orchestrator-async-jobs-readme]: ../orchestrator-async-jobs/README.md
 [prompt-template-readme]: ../prompt-template/README.md

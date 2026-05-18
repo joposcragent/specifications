@@ -12,10 +12,10 @@
 
 `POST /async-jobs/{jobUuid}`
 
-| Входной параметр         | Источник      | Комментарий                         |
-|--------------------------|---------------|-------------------------------------|
-| 📌`{jobUuid}`            | path-параметр | Совпадает с `uuid` в теле запроса   |
-| 📌`{createAsyncJobItem}` | тело запроса  | Объект `CreateAsyncJobItem`         |
+| Входной параметр         | Источник      | Комментарий                       |
+|--------------------------|---------------|-----------------------------------|
+| 📌`{jobUuid}`            | path-параметр | Совпадает с `uuid` в теле запроса |
+| 📌`{createAsyncJobItem}` | тело запроса  | Объект `CreateAsyncJobItem`       |
 
 Алгоритм работы:
 
@@ -35,10 +35,10 @@
 
 `PATCH /async-jobs/{jobUuid}`
 
-| Входной параметр         | Источник      | Комментарий                         |
-|--------------------------|---------------|-------------------------------------|
-| 📌`{jobUuid}`            | path-параметр |                                     |
-| 📌`{patchAsyncJobItem}`  | тело запроса  | Объект `PatchAsyncJobItem`          |
+| Входной параметр        | Источник      | Комментарий                |
+|-------------------------|---------------|----------------------------|
+| 📌`{jobUuid}`           | path-параметр |                            |
+| 📌`{patchAsyncJobItem}` | тело запроса  | Объект `PatchAsyncJobItem` |
 
 Алгоритм работы:
 
@@ -54,11 +54,11 @@
 
 `POST /async-jobs/{jobUuid}/finish/{terminalStatus}`
 
-| Входной параметр         | Источник      | Комментарий                                      |
-|--------------------------|---------------|--------------------------------------------------|
-| 📌`{jobUuid}`            | path-параметр |                                                  |
-| 📌`{terminalStatus}`     | path-параметр | `SUCCEEDED`, `FAILED` или `CANCELED`             |
-| `{finishAsyncJobItem}`   | тело запроса  | Опционально; объект `FinishAsyncJobItem`         |
+| Входной параметр       | Источник      | Комментарий                              |
+|------------------------|---------------|------------------------------------------|
+| 📌`{jobUuid}`          | path-параметр |                                          |
+| 📌`{terminalStatus}`   | path-параметр | `SUCCEEDED`, `FAILED` или `CANCELED`     |
+| `{finishAsyncJobItem}` | тело запроса  | Опционально; объект `FinishAsyncJobItem` |
 
 Алгоритм работы:
 
@@ -98,11 +98,11 @@
 
 `POST /async-jobs/{jobUuid}/related/{entityKind}/{entityUuid}`
 
-| Входной параметр         | Источник      | Комментарий                         |
-|--------------------------|---------------|-------------------------------------|
-| 📌`{jobUuid}`            | path-параметр |                                     |
-| 📌`{entityKind}`         | path-параметр | `POSTING` или `QUERY`               |
-| 📌`{entityUuid}`         | path-параметр | UUID связанной сущности             |
+| Входной параметр | Источник      | Комментарий             |
+|------------------|---------------|-------------------------|
+| 📌`{jobUuid}`    | path-параметр |                         |
+| 📌`{entityKind}` | path-параметр | `POSTING` или `QUERY`   |
+| 📌`{entityUuid}` | path-параметр | UUID связанной сущности |
 
 Алгоритм работы:
 
@@ -124,24 +124,48 @@
 
 `GET /async-jobs/list`
 
-| Входной параметр  | Источник       | Комментарий |
-|-------------------|----------------|-------------|
-| `{parentJobUuid}` | query-параметр |             |
-| `{status}`        | query-параметр |             |
-| `{startedBefore}` | query-параметр |             |
-| `{size}`          | query-параметр |             |
-| `{page}`          | query-параметр |             |
+| Входной параметр  | Источник       | Комментарий                           |
+|-------------------|----------------|---------------------------------------|
+| `{jobUuid}`       | query-параметр | Строка с `uuid` = `{jobUuid}`         |
+| `{parentJobUuid}` | query-параметр | `parent_uuid` = `{parentJobUuid}`     |
+| `{status}`        | query-параметр |                                       |
+| `{startedBefore}` | query-параметр |                                       |
+| `{sortBy}`        | query-параметр | См. ниже; по умолчанию `started_at`   |
+| `{sortDir}`       | query-параметр | `asc` или `desc`; по умолчанию `desc` |
+| `{size}`          | query-параметр |                                       |
+| `{page}`          | query-параметр |                                       |
+
+Допустимые значения `{sortBy}` (имена как у ключей JSON `AsyncJobItem`): `uuid`, `name`, `parentUuid`, `status`, `started_at`, `updated_at`, `finished_at`, `context`, `result`. Иное значение или некорректный `{sortDir}` → HTTP **400**.
 
 Алгоритм работы:
 
 1. Делает запрос в БД `joposcragent.orchestration.async_jobs` с отборами:
-   1. `parent_uuid` = `{parentJobUuid}`;
-   2. `status` = `{status}`;
-   3. `started_at` <= `{startedBefore}`;
-   4. limit и offset на основании `{size}` и `{page}`.
-2. Все query-параметры опциональные, комбинируются по `AND`.
-3. Возвращает `AsyncJobList` с массивом найденных записей (каждая запись — `AsyncJobItem`, в том числе с полем `context`).
-4. Если ничего не нашлось, то `AsyncJobList` возвращается с пустым массивом внутри, с HTTP 200.
+   1. `uuid` = `{jobUuid}` (если передан);
+   2. `parent_uuid` = `{parentJobUuid}` (если передан);
+   3. `status` = `{status}` (если передан);
+   4. `started_at` <= `{startedBefore}` (если передан);
+   5. сортировка по колонке, соответствующей `{sortBy}`, направление `{sortDir}` (для колонок с `NULL` при сортировке используется порядок `NULLS LAST`);
+   6. `limit` и `offset` на основании `{size}` и `{page}`.
+2. Все query-параметры опциональные, комбинируются по `AND` (кроме значений по умолчанию для `{sortBy}` и `{sortDir}`).
+3. Отдельным запросом `COUNT(*)` с теми же отборами (без `LIMIT`/`OFFSET`) вычисляет **общее** число строк `{total}` после фильтров.
+4. Возвращает `AsyncJobList` с массивом найденных записей (каждая запись — `AsyncJobItem`, в том числе с полем `context`) и полем `{total}`.
+5. Если ничего не нашлось, то `AsyncJobList` возвращается с пустым массивом внутри и `{total}` = 0, с HTTP 200.
+
+## Получить список вакансий или запросов, связанных с джобом
+
+`GET /async-jobs/{jobUuid}/list/related`
+
+| Входной параметр | Источник       | Комментарий |
+|------------------|----------------|-------------|
+| 📌`{jobUuid}`    | path-параметр  |             |
+
+Алгоритм работы:
+
+1. Проверяет, что `{jobUuid}` есть в таблице `joposcragent.orchestration.async_jobs`
+   1. Если нет - возвращает HTTP 404
+2. Выбирает `{jobPostingsList}` - массив уникальных uuid вакансий из `joposcragent.orchestration.async_jobs_to_job_postings`.
+3. Выбирает `{searchQueriesList}` - массив уникальных uuid поисковых запросов из `joposcragent.orchestration.async_jobs_to_search_queries`.
+4. Из полученных данных собирает и возвращает объект `RelatedEntitiesUuidsList` с кодом HTTP 200
 
 ## Получение списка асинхронных джобов, связанных с {entityUuid}
 
@@ -168,8 +192,9 @@
       1. `status` = `{status}`;
       2. `started_at` <= `{startedBefore}`;
    3. применяет limit и offset на основании `{size}` и `{page}`.
-3. Из полученных записей формирует и возвращает объект `AsyncJobList` (элементы — `AsyncJobItem`, с полем `context`).
-4. Если не нашлось ни одной записи, то возвращает `AsyncJobList` с пустым массивом внутри, с HTTP 200.
+3. Отдельным запросом `COUNT(*)` с теми же отборами (без `LIMIT`/`OFFSET`) вычисляет **общее** число строк `{total}`.
+4. Из полученных записей формирует и возвращает объект `AsyncJobList` (элементы — `AsyncJobItem`, с полем `context`) и поле `{total}`.
+5. Если не нашлось ни одной записи, то возвращает `AsyncJobList` с пустым массивом внутри, `{total}` = 0, с HTTP 200.
 
 ## Получение всей иерархии джобов с корнем {parentJobUuid}
 
@@ -211,6 +236,18 @@
    2. применяет `limit` и `offset`, если переданы `{size}` и `{page}`.
 4. Из получившегося массива строит дерево `AsyncJobHierarchyRelatedList` и возвращает его с кодом 200.
 5. Если не нашлось ни одной строки, всё равно возвращает `AsyncJobHierarchyRelatedList` с кодом 200 и пустым `list`.
+
+## Статус последних корневых джобов
+
+`GET /async-jobs/last-root-status`
+
+Алгоритм работы (эквивалентно объединённому SQL с `DISTINCT ON` и `UNION ALL`):
+
+1. Подзапрос `{parents}`: из `joposcragent.orchestration.async_jobs` для строк с `parent_uuid IS NULL` по каждому `name` выбирается одна строка с наибольшим `started_at` (в терминах PostgreSQL — `SELECT DISTINCT ON (name) uuid … ORDER BY name, started_at DESC`; на бэке может использоваться эквивалент через оконную функцию `ROW_NUMBER()`).
+2. Первая часть результата: все полные строки из `async_jobs`, чей `uuid` входит в `{parents}`.
+3. Вторая часть результата: все полные строки из `async_jobs`, у которых `parent_uuid` входит в `{parents}` и `name` = `async-job.collection-query-begin` (все такие дочерние джобы, без дополнительного «последнего на родителя»).
+4. Объединение частей 2 и 3 через `UNION ALL`, сортировка итога по `started_at` по возрастанию.
+5. Ответ 200: тело `LastRootJobsStatusList` (`list` — массив `AsyncJobItem` в порядке п. 4).
 
 <!-- LINKS -->
 

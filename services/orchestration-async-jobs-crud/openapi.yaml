@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: CRUD-операции над асинхронными джобами
-  version: 1.0.0
+  version: 1.2.0
 servers:
-  - url: http://orchestration-async-jobs-crud:8080/
   - url: http://localhost:8085/  
+  - url: http://orchestration-async-jobs-crud:8080/
 tags:
   - name: AsyncJobsController
     description: Работа с данными асинхронных джобов
@@ -161,13 +161,43 @@ paths:
           description: Такая связь уже установлена
         '500':
           $ref: '#/components/responses/UncaughtException' 
-
+  /async-jobs/{jobUuid}/list/related:
+    get:
+      description: Получить список вакансий или запросов, связанных с джобом
+      tags: 
+        - AsyncJobsController
+      parameters: 
+        - name: jobUuid
+          in: path
+          schema: 
+            type: string
+            format: uuid
+          required: true
+      responses: 
+        '200':
+          description: Списки UUID связанных вакансий и поисковых запросов
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/RelatedEntitiesUuidsList'
+        '404':
+          description: Не найден джоб с таким uuid
+        '400':
+          description: Некорректный запрос
+        '500':
+          $ref: '#/components/responses/UncaughtException' 
   /async-jobs/list:
     get:
       description: Получение списка асинхронных джобов 
       tags: 
         - AsyncJobsController
       parameters: 
+        - name: jobUuid
+          description: Только строка с uuid = {jobUuid}
+          in: query
+          schema: 
+            type: string
+            format: uuid
         - name: parentJobUuid
           description: Только непосредственные потомки {parentJobUuid}
           in: query
@@ -185,6 +215,17 @@ paths:
           schema: 
             type: string
             format: date-time
+        - name: sortBy
+          description: >
+            Поле сортировки (имена как у ключей JSON AsyncJobItem). По умолчанию started_at.
+          in: query
+          schema:
+            $ref: '#/components/schemas/AsyncJobListSortBy'
+        - name: sortDir
+          description: Направление сортировки. По умолчанию desc.
+          in: query
+          schema:
+            $ref: '#/components/schemas/AsyncJobListSortDirection'
         - $ref: '#/components/parameters/Size'
         - $ref: '#/components/parameters/Page'
       responses: 
@@ -194,6 +235,12 @@ paths:
             application/json: 
               schema: 
                 $ref: '#/components/schemas/AsyncJobList'
+        '400':
+          description: Некорректные sortBy или sortDir
+          content:
+            text/plain:
+              schema:
+                type: string
         '500':
           $ref: '#/components/responses/UncaughtException'
   /async-jobs/list/related/{entityUuid}:
@@ -287,16 +334,51 @@ paths:
           description: Некорректный запрос
         '500':
           $ref: '#/components/responses/UncaughtException'
-
+  /async-jobs/last-root-status:
+    get:
+      description: |
+        Статус последних корневых джобов.
+        Подзапрос «родители»: для каждого значения `name` среди строк с `parent_uuid IS NULL` выбирается одна строка с максимальным `started_at` (PostgreSQL `DISTINCT ON (name)` с сортировкой `name`, `started_at DESC`).
+        Ответ: объединение (`UNION ALL`) полных строк (1) всех таких родительских джобов по `uuid` и (2) всех джобов с `name = async-job.collection-query-begin`, у которых `parent_uuid` входит в множество `uuid` из подзапроса «родители».
+        Итог сортируется по `started_at` по возрастанию.
+      tags: 
+        - AsyncJobsController
+      responses: 
+        '200':
+          description: Статусы последних корневых джобов
+          content: 
+            application/json: 
+              schema: 
+                $ref: '#/components/schemas/LastRootJobsStatusList'
+        '500':
+          $ref: '#/components/responses/UncaughtException'
 components:
   schemas:
-    AsyncJobHierarchyRelatedList:
+    RelatedEntitiesUuidsList:
+      type: object
+      properties: 
+        jobPostingsList:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 0
+        searchQueriesList:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 0
+      required: 
+        - jobPostingsList
+        - searchQueriesList
+    LastRootJobsStatusList:
       type: object
       properties: 
         list:
           type: array
-          items: 
-            $ref: '#/components/schemas/AsyncJobHierarchy'
+          items:
+            $ref: '#/components/schemas/AsyncJobItem'
       required: 
         - list
     AsyncJobHierarchy:
@@ -311,6 +393,15 @@ components:
       required: 
         - root
         - children
+    AsyncJobHierarchyRelatedList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncJobHierarchy'
+      required:
+        - list
     CreateAsyncJobItem:
       type: object
       properties:
@@ -406,8 +497,30 @@ components:
           type: array
           items: 
             $ref: '#/components/schemas/AsyncJobItem'
+        total:
+          type: integer
+          format: int64
+          description: Число строк после отборов (до LIMIT/OFFSET)
       required: 
         - list
+        - total
+    AsyncJobListSortBy:
+      type: string
+      enum:
+        - uuid
+        - name
+        - parentUuid
+        - status
+        - started_at
+        - updated_at
+        - finished_at
+        - context
+        - result
+    AsyncJobListSortDirection:
+      type: string
+      enum:
+        - asc
+        - desc
     AsyncJobStatus:
       type: string
       enum:
