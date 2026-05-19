@@ -579,7 +579,6 @@ components:
           $ref: '#/components/schemas/ResponseStatus'
         publicationDate:
           type: string
-          format: date-time
         relevance:
           type: number
           format: double
