@@ -13,7 +13,7 @@
 Публикует сообщения в топики Kafka:
 
 - [`async-job.collection-query-begin`] - запускает пакетный сбор вакансий;
-- [`async-job.collection-batch-result`] - завершение пакетного сбора;
+- [`async-job.collection-batch-result`] - результат запуска пакетного сбора (успех, отмена или ошибка fan-out);
 - [`async-job.job-posting-evaluate-begin`] - запускает оценку
 
 ## Запуск пакетного сбора вакансий
@@ -31,8 +31,9 @@
 
 1. Слушает топик `async-job.collection-batch`, выбирая из него только сообщения с заголовком `type` = `async-job.collection-batch-begin`
 2. Запросом `GET /search-query/list?activeOnly=true` к `settings-manager` получает `{queryList}` — массив активных поисковых запросов.
-   1. Если ни одного нет публикует сообщение [`async-job.collection-batch-result`], см. п. 4.2:
-      1. в тело сообщения передает `status` = `CANCELED` и `result` = `"Не найдено активных поисковых запросов"`;
+   1. Если ни одного нет, публикует сообщение [`async-job.collection-batch-result`], см. п. 2.1:
+      1. в тело сообщения передаёт `status` = `CANCELED` и `result` с полем `message` = `"Не найдено активных поисковых запросов"`;
+   2. **п. 2.1** — заголовки и топик как в п. 4.1, `type` = `async-job.collection-batch-result`, `jobUuid` = `{payload}.jobUuid`.
 3. Для каждого запроса из массива:
    1. Генерирует `{currentJobUuid}` - новый UUID v4
    2. Отправляет сообщение [`async-job.collection-query-begin`]:
@@ -49,18 +50,24 @@
          4. `query` = `{queryList}.query`
          5. `searchQueryUuid` = `{queryList}.uuid`
          6. `lazy` = `{queryList}.isLazyScraping`
-4. При любом не перехваченном исключении:
-   1. логирует ошибку;
-   2. Публикует сообщение [`async-job.collection-batch-result`]:
+4. После успешной публикации всех `collection-query-begin` (без неперехваченных исключений на шагах 2–3):
+   1. **п. 4.1** — публикует сообщение [`async-job.collection-batch-result`]:
       1. Топик: `async-job.collection-batch`
       2. Заголовки:
          1. `key` = `{payload}.jobUuid`;
          2. `createdAt` = текущий момент времени;
          3. `type` = `async-job.collection-batch-result`;
+         4. `schemaVersion` = `1.0`
       3. Тело:
          1. `jobUuid` = `{payload}.jobUuid`;
-         2. `status` = `FAILED`;
-         3. `result` = `"${описание ошибки, какое есть}"`;
+         2. `status` = `SUCCEEDED` — успешное **развёртывание** дочерних `collection-query-begin`, а не итог сбора по всем запросам;
+         3. `result` — JSON-объект, например `message` с текстом о числе запущенных джобов и `childJobsDispatched` = размер `{queryList}`.
+5. При любом неперехваченном исключении на шагах 2–4:
+   1. логирует ошибку;
+   2. **п. 4.2** — публикует сообщение [`async-job.collection-batch-result`] (заголовки и топик как в п. 4.1):
+      1. `jobUuid` = `{payload}.jobUuid`;
+      2. `status` = `FAILED`;
+      3. `result` — JSON-объект с полем `message` = описание ошибки.
 
 ## Завершение пакетного сбора
 

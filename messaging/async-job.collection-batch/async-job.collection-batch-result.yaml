@@ -13,7 +13,9 @@ components:
             - $ref: '../common-orchestration-message.yaml#/components/schemas/MessageHeaders'
             - $ref: '#/components/schemas/MessageHeaders'
         payload:
-          $ref: '../common-async-job-result-message.yaml#/components/schemas/MessagePayload'
+          allOf:
+            - $ref: '../common-async-job-result-message.yaml#/components/schemas/MessagePayload'
+            - $ref: '#/components/schemas/MessagePayload'
       required:
         - headers
         - payload
@@ -27,3 +29,15 @@ components:
           description: Тип сообщения
       required:
         - type
+    MessagePayload:
+      type: object
+      description: |
+        Результат обработки `async-job.collection-batch-begin` в orchestration-conductor.
+        `SUCCEEDED` — fan-out дочерних collection-query-begin выполнен;
+        `CANCELED` — нет активных поисковых запросов;
+        `FAILED` — ошибка при обработке begin.
+      properties:
+        childJobsDispatched:
+          type: integer
+          minimum: 0
+          description: Число опубликованных `async-job.collection-query-begin` (обычно при `status` = `SUCCEEDED`)
